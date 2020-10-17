@@ -12,8 +12,8 @@ import numpy as np
 
 #%%
 
-df = pd.read_csv('household.csv')
+df = pd.read_csv('ahs2017n.csv')
 
 #%%
 df_SF = df.loc[df['OMB13CBSA']=="'41860'"]
-# df_SF.to_csv('household_filtered.csv')
+df_SF.to_csv('SF_41860_Flat.csv')
