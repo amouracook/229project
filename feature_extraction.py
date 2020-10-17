@@ -13,7 +13,13 @@ import statsmodels.formula.api as sm
 df = pd.read_csv('SF_41860_Flat.csv')
 
 
+#%% Variable Lists
+
+# Topic: Admin: 
+
+
 #%%
+
 from collections import Counter 
 n = Counter(df['DPEVLOC'])
 
