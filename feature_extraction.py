@@ -14,6 +14,7 @@ df = pd.read_csv('SF_41860_Flat.csv')
 
 
 #%%
-print(np.unique(df['DPEVLOC']))
+from collections import Counter 
+n = Counter(df['DPEVLOC'])
 
 
