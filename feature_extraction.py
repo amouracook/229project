@@ -15,8 +15,57 @@ df = pd.read_csv('SF_41860_Flat.csv', index_col=0)
 
 #%% Variable Lists
 
-# Topic: Admin: 
+# Topic: Admin
+OMB13CBSA = '41860'
+vars_admin = ['']
 
+# Topic: Occupancy and Tenure
+vars_occ = []
+
+# Topic: Structural
+vars_struct = []
+
+# Topic: Equipment and Appliances
+vars_equip = []
+
+# Topic: Housing Problems
+vars_probs = []
+
+# Topic: Demographics
+vars_demo = []
+
+# Topic: Income
+vars_income = []
+
+# Topic: Housing Costs
+vars_costs = []
+
+# Topic: Mortgage Details
+vars_mort = []
+
+# Topic: Home Improvement
+vars_improv = []
+
+# Topic: Neighborhood Features
+vars_neigh = []
+
+# Topic: Recent Movers
+vars_move = []
+
+# Topic: Delinquency
+vars_del = []
+
+# Topic: Disaster Planning
+vars_dis = []
+
+# Topic: Commuting
+vars_comm = []
+
+# Topic: Eviction
+vars_evict = []
+    
+# names = df.columns
+# print(np.where(names=="DIVISION"))
 
 #%%
 
@@ -35,3 +84,4 @@ y = df['DPEVLOC']
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=1)
 X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.25, random_state=1)
+
