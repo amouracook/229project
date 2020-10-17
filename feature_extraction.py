@@ -96,8 +96,6 @@ x_vars = [var for var_list in [vars_admin, vars_occ, vars_struct, vars_equip, va
           vars_income, vars_costs, vars_mort, vars_improv, vars_neigh, vars_move, 
           vars_del, vars_dis, vars_comm, vars_evict] for var in var_list]
 
-x_vars = ['TOTHCAMT', 'VACDERSDAYS','HOAAMT','NUMADULTS','NUMOLDKIDS','MILHH','UMVETS']
-
 X = df[df.columns.intersection(x_vars)]
 y = df['DPEVLOC']
 
