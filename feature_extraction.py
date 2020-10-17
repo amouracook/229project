@@ -10,7 +10,7 @@ import pandas as pd
 import numpy as np
 import statsmodels.formula.api as sm
 
-df = pd.read_csv('SF_41860_Flat.csv')
+df = pd.read_csv('SF_41860_Flat.csv', index_col=0)
 
 
 #%% Variable Lists
