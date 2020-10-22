@@ -91,6 +91,12 @@ x_vars = [var for var_list in [vars_admin, vars_occ, vars_struct, vars_equip,
                                vars_del, vars_dis, vars_comm, vars_evict]
           for var in var_list]
 
+encode = [code for code_list in [type_admin, type_occ, type_struct,
+                               type_demo, type_income, type_costs,
+                               type_neigh, type_move,
+                               type_dis]
+          for code in code_list]
+
 #%% Data Cleaning
 
 from collections import Counter
@@ -119,12 +125,6 @@ from sklearn import preprocessing
 
 X = df[x_vars]
 y = df['DPEVLOC']
-
-encode = [code for code_list in [type_admin, type_occ, type_struct,
-                               type_demo, type_income, type_costs,
-                               type_neigh, type_move,
-                               type_dis]
-          for code in code_list]
 
 le = preprocessing.LabelEncoder()
 for i, val in enumerate(encode):
