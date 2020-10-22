@@ -102,7 +102,9 @@ df = df.loc[df['DPEVLOC'].isin(["'{}'".format(i) for i in range(1,6)])]
 # Get proportion of nonreported values in the features
 props_NA = [sum(list(df[var]=="'-6'") or list(df[var]=="'-9'"))/len(df[var]) for var in x_vars]
 badvars_i = [i for i, var in enumerate(props_NA) if var > 0.25]
+# list of variables that have proportion of NA higher than 25%
 badvars = [x_vars[i] for i in badvars_i]
+# list of variables with less than 25% NA
 goodvars = [var for var in x_vars if var not in badvars]
 
 #%% Split into train/dev/test set
