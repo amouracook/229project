@@ -52,7 +52,7 @@ type_demo = [1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1
 
 # Topic: Income
 vars_income = ['HINCP','FINCP','FS']
-type_demo = [0, 0, 1]
+type_income = [0, 0, 1]
 
 # Topic: Housing Costs
 vars_costs = ['MORTAMT','RENT','UTILAMT','PROTAXAMT','INSURAMT','HOAAMT','LOTAMT','TOTHCAMT','HUDSUB','RENTCNTRL','FIRSTHOME','MARKETVAL','TOTBALAMT']
@@ -117,11 +117,14 @@ goodvars = [var for var in x_vars if var not in badvars]
 from sklearn.model_selection import train_test_split
 from sklearn import preprocessing
 
-x_vars_update = df.columns.intersection(x_vars)
 X = df[x_vars]
 y = df['DPEVLOC']
 
-encode = [1 for i in x_vars_update]
+encode = [code for code_list in [type_admin, type_occ, type_struct,
+                               type_demo, type_income, type_costs,
+                               type_neigh, type_move,
+                               type_dis]
+          for code in code_list]
 
 le = preprocessing.LabelEncoder()
 for i, val in enumerate(encode):
