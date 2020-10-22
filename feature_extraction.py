@@ -47,7 +47,7 @@ vars_equip = []
 vars_probs = []
 
 # Topic: Demographics
-vars_demo = ['HSHLDTYPE','SAMEHHLD','NUMPEOPLE','NUMADULTS','NUMELDERS','NUMYNGKIDS','NUMOLDKIDS','NUMVETS','MILHH','NUMNONREL','SAMSEXHH','PARTNER','MULTIGEN','GRANDHH','NUMSUBFAM','NUMSECFAM','DISHH','HHSEX','HHAGE','HHMAR','HHRACE','HHRACEAS','HHRACEPI','HHSPAN','HHCITSHP','HHNATVTY','HHINUSYR','HHMOVE','HHGRAD','HHENROLL','HHYNGKIDS','HHOLDKIDS','HHADLTKIDS','HHHEAR','HHSEE','HHMEMRY','HHWALK','HHCARE','HHERRND']
+vars_demo = ['HSHLDTYPE','SAMEHHLD','NUMPEOPLE','NUMADULTS','NUMELDERS','NUMYNGKIDS','NUMOLDKIDS','NUMVETS','MILHH','NUMNONREL','PARTNER','MULTIGEN','GRANDHH','NUMSUBFAM','NUMSECFAM','DISHH','HHSEX','HHAGE','HHMAR','HHRACE','HHRACEAS','HHRACEPI','HHSPAN','HHCITSHP','HHNATVTY','HHINUSYR','HHMOVE','HHGRAD','HHENROLL','HHYNGKIDS','HHOLDKIDS','HHADLTKIDS','HHHEAR','HHSEE','HHMEMRY','HHWALK','HHCARE','HHERRND']
 
 # Topic: Income
 vars_income = ['HINCP','FINCP','FS']
@@ -100,7 +100,7 @@ s = sum([n[f"'{i}'"] for i in range(1,6)])
 df = df.loc[df['DPEVLOC'].isin(["'{}'".format(i) for i in range(1,6)])]
 
 # Get proportion of nonreported values in the features
-NAprops = [sum(list(df[var]=="'-6'") or list(df[var]=="'-9'")) for var in x_vars]
+NAprops = [sum(list(df[var]=="'-6'") or list(df[var]=="'-9'"))/len(df[var]) for var in x_vars]
     
 #%% Split into train/dev/test set
 from sklearn.model_selection import train_test_split
