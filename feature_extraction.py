@@ -106,9 +106,36 @@ prop_badvars = sum(badvars)/len(x_vars)
     
 #%% Split into train/dev/test set
 from sklearn.model_selection import train_test_split
+from sklearn import preprocessing
 
-X = df[df.columns.intersection(x_vars)]
+x_vars_update = df.columns.intersection(x_vars)
+X = df[x_vars]
 y = df['DPEVLOC']
+
+encode = [1 for i in x_vars_update]
+
+le = preprocessing.LabelEncoder()
+for i, val in enumerate(encode):
+    if val == 1:
+        col = x_vars[i]
+        Xi = X.loc[:,col].copy()
+        le.fit(np.unique(Xi))
+        X.loc[:,col] = le.transform(Xi)
+
+#%%
+# Train-val-test = 0.6-0.2-0.2
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=1)
+X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.25, random_state=1)
+
+#%%
+from sklearn.ensemble import RandomForestClassifier
+
+# Have to encode all categorical variables with .astype('category')
+
+clf = RandomForestClassifier(max_depth=7, random_state=0)
+clf.fit(X_train, y_train)
+print(sum(y_val == clf.predict(X_val))/y_val.shape[0])
+
 
 # Train-val-test = 0.6-0.2-0.2
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=1)
