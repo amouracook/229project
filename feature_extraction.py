@@ -97,7 +97,7 @@ encode = [code for code_list in [type_admin, type_occ, type_struct,
                                type_dis]
           for code in code_list]
 
-#%% Data Cleaning
+#%% Data Cleaning and Filtering
 
 from collections import Counter
 n = Counter(df['DPEVLOC'])
@@ -108,16 +108,16 @@ s = sum([n[f"'{i}'"] for i in range(1,6)])
 # M or -9: Not reported
 # N or -6: Not applicable
 
-# Filter by valid only
+# Filter by valid only (rows)
 df = df.loc[df['DPEVLOC'].isin(["'{}'".format(i) for i in range(1,6)])]
 
-# Get proportion of nonreported values in the features
+# Filter by proportion of NA values (cols)
 props_NA = [sum(list(df[var]=="'-6'") or list(df[var]=="'-9'"))/len(df[var]) for var in x_vars]
-badvars_i = [i for i, var in enumerate(props_NA) if var > 0.25]
-# list of variables that have proportion of NA higher than 25%
-badvars = [x_vars[i] for i in badvars_i]
-# list of variables with less than 25% NA
-goodvars = [var for var in x_vars if var not in badvars]
+ind_keep = [i for i, var in enumerate(props_NA) if var <= 0.25]
+
+
+# Final list of variables to keep
+good_vars = [x_vars[i] for i in ind_keep]
 
 #%% Split into train/dev/test set
 from sklearn.model_selection import train_test_split
