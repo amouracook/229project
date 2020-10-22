@@ -6,7 +6,7 @@ Created on Sat Oct 17 09:42:08 2020
 @author: tamrazovd
 """
 
-import pandas as pd 
+import pandas as pd
 import numpy as np
 import statsmodels.formula.api as sm
 
@@ -93,7 +93,7 @@ x_vars = [var for var_list in [vars_admin, vars_occ, vars_struct, vars_equip,
 
 #%% Data Cleaning
 
-from collections import Counter 
+from collections import Counter
 n = Counter(df['DPEVLOC'])
 
 # Number of valid features
@@ -106,13 +106,45 @@ s = sum([n[f"'{i}'"] for i in range(1,6)])
 df = df.loc[df['DPEVLOC'].isin(["'{}'".format(i) for i in range(1,6)])]
 
 # Get proportion of nonreported values in the features
-NAprops = [sum(list(df[var]=="'-6'") or list(df[var]=="'-9'")) for var in x_vars]
-    
+props_NA = [sum(list(df[var]=="'-6'") or list(df[var]=="'-9'"))/len(df[var]) for var in x_vars]
+badvars_i = [i for i, var in enumerate(props_NA) if var > 0.25]
+# list of variables that have proportion of NA higher than 25%
+badvars = [x_vars[i] for i in badvars_i]
+# list of variables with less than 25% NA
+goodvars = [var for var in x_vars if var not in badvars]
+
 #%% Split into train/dev/test set
 from sklearn.model_selection import train_test_split
+from sklearn import preprocessing
 
-X = df[df.columns.intersection(x_vars)]
+x_vars_update = df.columns.intersection(x_vars)
+X = df[x_vars]
 y = df['DPEVLOC']
+
+encode = [1 for i in x_vars_update]
+
+le = preprocessing.LabelEncoder()
+for i, val in enumerate(encode):
+    if val == 1:
+        col = x_vars[i]
+        Xi = X.loc[:,col].copy()
+        le.fit(np.unique(Xi))
+        X.loc[:,col] = le.transform(Xi)
+
+#%%
+# Train-val-test = 0.6-0.2-0.2
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=1)
+X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.25, random_state=1)
+
+#%%
+from sklearn.ensemble import RandomForestClassifier
+
+# Have to encode all categorical variables with .astype('category')
+
+clf = RandomForestClassifier(max_depth=7, random_state=0)
+clf.fit(X_train, y_train)
+print(sum(y_val == clf.predict(X_val))/y_val.shape[0])
+
 
 # Train-val-test = 0.6-0.2-0.2
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=1)
@@ -125,4 +157,3 @@ from sklearn.ensemble import RandomForestClassifier
 
 clf = RandomForestClassifier(max_depth=2, random_state=0)
 clf.fit(X_train, y_train)
-
