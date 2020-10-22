@@ -13,7 +13,8 @@ import statsmodels.formula.api as sm
 df = pd.read_csv('SF_41860_Flat.csv', index_col=0)
 
 
-#%%
+#%% Data Categorization
+
 values = pd.read_csv('AHS2017ValueLabels.csv')
 values = values.loc[values['FLAT']=='YES']
 
@@ -78,13 +79,14 @@ vars_evict = []
 # names = df.columns
 # print(np.where(names=="DIVISION"))
 
-#%%
+#%% Data Cleaning
 
 from collections import Counter 
 n = Counter(df['DPEVLOC'])
 
 # Number of valid features
-s = sum([n["'{}'".format(i)] for i in range(1,6)])
+# s = sum([n["'{}'".format(i)] for i in range(1,6)])
+s = sum([n[f"'{i}'"] for i in range(1,6)])
 
 # M or -9: Not reported
 # N or -6: Not applicable
