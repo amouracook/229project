@@ -88,7 +88,7 @@ vars_evict = []
 x_vars = [var for var_list in [vars_admin, vars_occ, vars_struct, vars_equip,
                                vars_probs, vars_demo, vars_income, vars_costs,
                                vars_mort, vars_improv, vars_neigh, vars_move,
-                               vars_del, vars_dis, vars_comm, vars_evict]
+                               vars_del, vars_comm, vars_evict]
           for var in var_list]
 
 #%% Data Cleaning
@@ -122,17 +122,19 @@ y = df['DPEVLOC']
 
 encode = [code for code_list in [type_admin, type_occ, type_struct,
                                type_demo, type_income, type_costs,
-                               type_neigh, type_move,
-                               type_dis]
-          for code in code_list]
+                               type_neigh, type_move] for code in code_list]
 
 le = preprocessing.LabelEncoder()
 for i, val in enumerate(encode):
+    print(x_vars[i],val)
     if val == 1:
         col = x_vars[i]
         Xi = X.loc[:,col].copy()
         le.fit(np.unique(Xi))
         X.loc[:,col] = le.transform(Xi)
+        
+# Filter by only good variables
+X = X.loc[:,goodvars]
 
 #%%
 # Train-val-test = 0.6-0.2-0.2
@@ -144,19 +146,6 @@ from sklearn.ensemble import RandomForestClassifier
 
 # Have to encode all categorical variables with .astype('category')
 
-clf = RandomForestClassifier(max_depth=7, random_state=0)
+clf = RandomForestClassifier(max_depth=4, random_state=0)
 clf.fit(X_train, y_train)
 print(sum(y_val == clf.predict(X_val))/y_val.shape[0])
-
-
-# Train-val-test = 0.6-0.2-0.2
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=1)
-X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.25, random_state=1)
-
-#%%
-from sklearn.ensemble import RandomForestClassifier
-
-# Have to encode all categorical variables with .astype('category')
-
-clf = RandomForestClassifier(max_depth=2, random_state=0)
-clf.fit(X_train, y_train)
