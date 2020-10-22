@@ -23,15 +23,22 @@ print(df.columns)
 
 #%% Variable Lists
 
+# Data/Variable Types
+# Categorial == 1
+# Continuous == 0
+
 # Topic: Admin
 OMB13CBSA = '41860'
-vars_admin = ['INTSTATUS','SPLITSAMP',]
+vars_admin = ['INTSTATUS','SPLITSAMP']
+type_admin = [1, 1]
 
 # Topic: Occupancy and Tenure
 vars_occ = ['TENURE','CONDO','HOA','OWNLOT','MGRONSITE','VACRESDAYS','VACRNTDAYS']
+type_occ = [1, 1, 1, 1, 1, 1, 1]
 
 # Topic: Structural
-vars_struct = ['BLD','NUNITS','YRBUILT','GUTREHB','LOTSIZE','GARAGE','WINBARS','MHWIDE','UNITSIZE','TOTROOMS','KITEXCLU','BATHEXCLU']
+vars_struct = ['BLD','YRBUILT','GUTREHB','LOTSIZE','GARAGE','WINBARS','MHWIDE','UNITSIZE','TOTROOMS','KITEXCLU','BATHEXCLU']
+type_struct = [1, ]
 
 # Topic: Equipment and Appliances
 vars_equip = []
