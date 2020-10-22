@@ -78,13 +78,12 @@ vars_comm = []
 
 # Topic: Eviction
 vars_evict = []
-    
 
-# bath = df['BATHROOMS']
-# jbath = df['JBATHROOMS']
-
-# names = df.columns
-# print(np.where(names=="DIVISION"))
+x_vars = [var for var_list in [vars_admin, vars_occ, vars_struct, vars_equip,
+                               vars_probs, vars_demo, vars_income, vars_costs,
+                               vars_mort, vars_improv, vars_neigh, vars_move,
+                               vars_del, vars_dis, vars_comm, vars_evict]
+          for var in var_list]
 
 #%% Data Cleaning
 
@@ -92,7 +91,6 @@ from collections import Counter
 n = Counter(df['DPEVLOC'])
 
 # Number of valid features
-# s = sum([n["'{}'".format(i)] for i in range(1,6)])
 s = sum([n[f"'{i}'"] for i in range(1,6)])
 
 # M or -9: Not reported
@@ -100,13 +98,12 @@ s = sum([n[f"'{i}'"] for i in range(1,6)])
 
 # Filter by valid only
 df = df.loc[df['DPEVLOC'].isin(["'{}'".format(i) for i in range(1,6)])]
+
+# Get proportion of nonreported values in the features
+NAprops = [sum(list(df[var]=="'-6'") or list(df[var]=="'-9'")) for var in x_vars]
     
 #%% Split into train/dev/test set
 from sklearn.model_selection import train_test_split
-
-x_vars = [var for var_list in [vars_admin, vars_occ, vars_struct, vars_equip, vars_probs, vars_demo, 
-          vars_income, vars_costs, vars_mort, vars_improv, vars_neigh, vars_move, 
-          vars_del, vars_dis, vars_comm, vars_evict] for var in var_list]
 
 X = df[df.columns.intersection(x_vars)]
 y = df['DPEVLOC']
