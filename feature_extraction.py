@@ -140,7 +140,7 @@ for i, val in enumerate(encode):
         X.loc[:,col] = le.transform(Xi)
         
 # Filter by only good variables
-X = X.loc[:,goodvars]
+X = X.loc[:,good_vars]
 
 #%%
 # Train-val-test = 0.6-0.2-0.2
