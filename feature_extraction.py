@@ -100,7 +100,10 @@ s = sum([n[f"'{i}'"] for i in range(1,6)])
 df = df.loc[df['DPEVLOC'].isin(["'{}'".format(i) for i in range(1,6)])]
 
 # Get proportion of nonreported values in the features
-NAprops = [sum(list(df[var]=="'-6'") or list(df[var]=="'-9'"))/len(df[var]) for var in x_vars]
+props_NA = [sum(list(df[var]=="'-6'") or list(df[var]=="'-9'"))/len(df[var]) for var in x_vars]
+badvars = [x > .25 for x in props_NA]
+prop_badvars = sum(badvars)/len(x_vars)
+
     
 #%% Split into train/dev/test set
 from sklearn.model_selection import train_test_split
