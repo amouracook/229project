@@ -86,6 +86,9 @@ n = Counter(df['DPEVLOC'])
 # Number of valid features
 s = sum([n["'{}'".format(i)] for i in range(1,6)])
 
+# M or -9: Not reported
+# N or -6: Not applicable
+
 # Filter by valid only
 df = df.loc[df['DPEVLOC'].isin(["'{}'".format(i) for i in range(1,6)])]
     
