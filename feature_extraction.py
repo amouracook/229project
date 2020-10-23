@@ -133,7 +133,7 @@ good_vars = [x_vars[i] for i in ind_keep]
 
 #%% Split into train/dev/test set
 from sklearn.model_selection import train_test_split
-from sklearn import preprocessing
+from sklearn import preprocessing, metrics
 
 X = df[x_vars]
 y = df['DPEVLOC']
@@ -145,6 +145,10 @@ encode = [code for code_list in [type_admin, type_occ, type_struct,
 X = X.copy()
 le = preprocessing.LabelEncoder()
 for i, val in enumerate(encode):
+<<<<<<< Updated upstream
+=======
+    # print(x_vars[i],val)
+>>>>>>> Stashed changes
     if val == 1:
         col = x_vars[i]
         Xi = X.loc[:,col]
@@ -153,6 +157,7 @@ for i, val in enumerate(encode):
 
 le.fit(np.unique(y))
 y = le.transform(y)
+
 # Filter by only good variables
 X = X.loc[:,good_vars]
 
@@ -163,11 +168,19 @@ X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.
 
 #%%
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
 
 clf = RandomForestClassifier(max_depth=5, random_state=0)
+<<<<<<< Updated upstream
+=======
+# clf = LogisticRegression(max_iter=50000)
+>>>>>>> Stashed changes
 clf.fit(X_train, y_train)
-accuracy = sum(y_val == clf.predict(X_val))/y_val.shape[0]
+y_pred = clf.predict(X_val)
+accuracy = sum(y_val == y_pred)/y_val.shape[0]
+# le.inverse_transform(y_val) #class encoding for output
 print(accuracy)
+<<<<<<< Updated upstream
 
 #%%
 from xgboost import XGBClassifier
@@ -185,3 +198,6 @@ print(confusion_matrix(y_val , clf.predict(X_val)))
 from sklearn.linear_model import RidgeClassifier
 clf = RidgeClassifier().fit(X_train, y_train)
 print(clf.coef_)
+=======
+metrics.confusion_matrix(y_val,y_pred)
+>>>>>>> Stashed changes
