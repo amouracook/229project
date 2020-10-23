@@ -88,7 +88,7 @@ vars_evict = []
 x_vars = [var for var_list in [vars_admin, vars_occ, vars_struct, vars_equip,
                                vars_probs, vars_demo, vars_income, vars_costs,
                                vars_mort, vars_improv, vars_neigh, vars_move,
-                               vars_del, vars_comm, vars_evict]
+                               vars_del, vars_dis, vars_comm, vars_evict]
           for var in var_list]
 
 encode = [code for code_list in [type_admin, type_occ, type_struct,
@@ -113,10 +113,16 @@ df = df.loc[df['DPEVLOC'].isin(["'{}'".format(i) for i in range(1,6)])]
 
 # Filter by proportion of NA values (cols)
 props_NA = [sum(list(df[var]=="'-6'") or list(df[var]=="'-9'"))/len(df[var]) for var in x_vars]
-ind_keep = [i for i, var in enumerate(props_NA) if var <= 0.25]
+ind_remove = [i for i, var in enumerate(props_NA) if var > 0.25]
 
+# Exclude certain variables by choice
+vars_remove = ['MORTAMT','RENT','PROTAXAMT','HOAAMT','LOTAMT','TOTBALAMT']
+vars_remove = [var for var_list in [vars_dis, vars_remove] for var in var_list]
+ind_remove.extend([i for i, var in enumerate(x_vars) if var in vars_remove and i not in ind_remove])
 
 # Final list of variables to keep
+ind_keep = list(range(len(x_vars)))
+[ind_keep.remove(i) for i in ind_remove]
 good_vars = [x_vars[i] for i in ind_keep]
 
 #%% Split into train/dev/test set
@@ -157,4 +163,9 @@ from sklearn.ensemble import RandomForestClassifier
 
 clf = RandomForestClassifier(max_depth=4, random_state=0)
 clf.fit(X_train, y_train)
+<<<<<<< Updated upstream
 print(sum(y_val == clf.predict(X_val))/y_val.shape[0])
+=======
+accuracy = sum(y_val == clf.predict(X_val))/y_val.shape[0]
+print(accuracy)
+>>>>>>> Stashed changes
