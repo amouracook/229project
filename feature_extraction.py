@@ -130,15 +130,18 @@ encode = [code for code_list in [type_admin, type_occ, type_struct,
                                type_demo, type_income, type_costs,
                                type_neigh, type_move] for code in code_list]
 
+X = X.copy()
 le = preprocessing.LabelEncoder()
 for i, val in enumerate(encode):
     print(x_vars[i],val)
     if val == 1:
         col = x_vars[i]
-        Xi = X.loc[:,col].copy()
+        Xi = X.loc[:,col]
         le.fit(np.unique(Xi))
         X.loc[:,col] = le.transform(Xi)
-        
+
+le.fit(np.unique(y))
+y = le.transform(y)        
 # Filter by only good variables
 X = X.loc[:,good_vars]
 
