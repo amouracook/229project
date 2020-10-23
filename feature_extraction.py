@@ -9,6 +9,8 @@ Created on Sat Oct 17 09:42:08 2020
 import pandas as pd
 import numpy as np
 import statsmodels.formula.api as sm
+from sklearn.model_selection import train_test_split
+from sklearn import preprocessing, metrics
 
 df = pd.read_csv('SF_41860_Flat.csv', index_col=0)
 
@@ -132,8 +134,6 @@ ind_keep = list(range(len(x_vars)))
 good_vars = [x_vars[i] for i in ind_keep]
 
 #%% Split into train/dev/test set
-from sklearn.model_selection import train_test_split
-from sklearn import preprocessing, metrics
 
 X = df[x_vars]
 y = df['DPEVLOC']
