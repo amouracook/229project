@@ -115,6 +115,12 @@ df = df.loc[df['DPEVLOC'].isin(["'{}'".format(i) for i in range(1,6)])]
 props_NA = [sum(list(df[var]=="'-6'") or list(df[var]=="'-9'"))/len(df[var]) for var in x_vars]
 ind_keep = [i for i, var in enumerate(props_NA) if var <= 0.25]
 
+# Transform MARKETVAL by making all -6 and -9 values = 0
+df = df['MARKETVAL'].replace(-6, 0)
+df = df['MARKETVAL'].replace(-9, 0)
+
+# Make HHINUSYR a categorical variable
+df['HHINUSYR'] = np.digitize(df['HHINUSYR'], bins=np.arange(-10,2030,10))
 
 # Final list of variables to keep
 good_vars = [x_vars[i] for i in ind_keep]
