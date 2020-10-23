@@ -15,11 +15,11 @@ df = pd.read_csv('SF_41860_Flat.csv', index_col=0)
 
 #%% Data Categorization
 
-values = pd.read_csv('AHS2017ValueLabels.csv')
-values = values.loc[values['FLAT']=='YES']
+# values = pd.read_csv('AHS2017ValueLabels.csv')
+# values = values.loc[values['FLAT']=='YES']
 
-# print(len(np.unique(values['NAME'])))
-# print(df.columns)
+# # print(len(np.unique(values['NAME'])))
+# # print(df.columns)
 
 #%% Variable Lists
 
@@ -108,7 +108,7 @@ s = sum([n[f"'{i}'"] for i in range(1,6)])
 # M or -9: Not reported
 # N or -6: Not applicable
 
-# Filter by valid only (rows)
+# Filter by valid output only (rows)
 df = df.loc[df['DPEVLOC'].isin(["'{}'".format(i) for i in range(1,6)])]
 
 # Filter by proportion of NA values (cols)
@@ -116,8 +116,7 @@ props_NA = [sum(list(df[var]=="'-6'") or list(df[var]=="'-9'"))/len(df[var]) for
 ind_remove = [i for i, var in enumerate(props_NA) if var > 0.25]
 
 # Transform MARKETVAL by making all -6 and -9 values = 0
-df = df['MARKETVAL'].replace(-6, 0)
-df = df['MARKETVAL'].replace(-9, 0)
+df['MARKETVAL'] = df['MARKETVAL'].clip(lower=0)
 
 # Make HHINUSYR a categorical variable
 df['HHINUSYR'] = np.digitize(df['HHINUSYR'], bins=np.arange(-10,2030,10))
@@ -146,7 +145,6 @@ encode = [code for code_list in [type_admin, type_occ, type_struct,
 X = X.copy()
 le = preprocessing.LabelEncoder()
 for i, val in enumerate(encode):
-    print(x_vars[i],val)
     if val == 1:
         col = x_vars[i]
         Xi = X.loc[:,col]
@@ -166,7 +164,24 @@ X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.
 #%%
 from sklearn.ensemble import RandomForestClassifier
 
-clf = RandomForestClassifier(max_depth=4, random_state=0)
+clf = RandomForestClassifier(max_depth=5, random_state=0)
 clf.fit(X_train, y_train)
 accuracy = sum(y_val == clf.predict(X_val))/y_val.shape[0]
 print(accuracy)
+
+#%%
+from xgboost import XGBClassifier
+clf = XGBClassifier(objective='multi:softmax', random_state=0, max_depth=2, learning_rate=0.001,
+                    n_estimators = 100)
+clf.fit(X_train, y_train)
+accuracy = sum(y_val == clf.predict(X_val))/y_val.shape[0]
+print(accuracy)
+
+#%%
+from sklearn.metrics import confusion_matrix
+print(confusion_matrix(y_val , clf.predict(X_val)))
+
+#%%
+from sklearn.linear_model import RidgeClassifier
+clf = RidgeClassifier().fit(X_train, y_train)
+print(clf.coef_)
