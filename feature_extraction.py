@@ -158,6 +158,7 @@ y = le.transform(y)
 # Filter by only good variables
 X = X.loc[:,good_vars]
 
+
 #%%
 # Train-val-test = 0.6-0.2-0.2
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=1)
@@ -165,16 +166,21 @@ X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.
 
 #%%
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import LogisticRegression
 
 clf = RandomForestClassifier(max_depth=5, random_state=0)
-# clf = LogisticRegression(max_iter=50000)
 clf.fit(X_train, y_train)
 y_pred = clf.predict(X_val)
 accuracy = sum(y_val == y_pred)/y_val.shape[0]
 # le.inverse_transform(y_val) #class encoding for output
 print(accuracy)
 
+#%%
+from sklearn.linear_model import LogisticRegression
+clf = LogisticRegression(max_iter=50000)
+clf.fit(X_train, y_train)
+y_pred = clf.predict(X_val)
+accuracy = sum(y_val == y_pred)/y_val.shape[0]
+print(accuracy)
 
 #%%
 from xgboost import XGBClassifier
