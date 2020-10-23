@@ -159,13 +159,7 @@ X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.
 #%%
 from sklearn.ensemble import RandomForestClassifier
 
-# Have to encode all categorical variables with .astype('category')
-
 clf = RandomForestClassifier(max_depth=4, random_state=0)
 clf.fit(X_train, y_train)
-<<<<<<< Updated upstream
-print(sum(y_val == clf.predict(X_val))/y_val.shape[0])
-=======
 accuracy = sum(y_val == clf.predict(X_val))/y_val.shape[0]
 print(accuracy)
->>>>>>> Stashed changes
