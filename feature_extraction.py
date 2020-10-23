@@ -145,10 +145,7 @@ encode = [code for code_list in [type_admin, type_occ, type_struct,
 X = X.copy()
 le = preprocessing.LabelEncoder()
 for i, val in enumerate(encode):
-<<<<<<< Updated upstream
-=======
     # print(x_vars[i],val)
->>>>>>> Stashed changes
     if val == 1:
         col = x_vars[i]
         Xi = X.loc[:,col]
