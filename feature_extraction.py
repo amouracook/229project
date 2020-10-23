@@ -163,9 +163,5 @@ from sklearn.ensemble import RandomForestClassifier
 
 clf = RandomForestClassifier(max_depth=4, random_state=0)
 clf.fit(X_train, y_train)
-<<<<<<< Updated upstream
-print(sum(y_val == clf.predict(X_val))/y_val.shape[0])
-=======
 accuracy = sum(y_val == clf.predict(X_val))/y_val.shape[0]
 print(accuracy)
->>>>>>> Stashed changes
