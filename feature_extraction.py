@@ -88,7 +88,7 @@ vars_evict = []
 x_vars = [var for var_list in [vars_admin, vars_occ, vars_struct, vars_equip,
                                vars_probs, vars_demo, vars_income, vars_costs,
                                vars_mort, vars_improv, vars_neigh, vars_move,
-                               vars_del, vars_comm, vars_evict]
+                               vars_del, vars_dis, vars_comm, vars_evict]
           for var in var_list]
 
 encode = [code for code_list in [type_admin, type_occ, type_struct,
@@ -113,7 +113,8 @@ df = df.loc[df['DPEVLOC'].isin(["'{}'".format(i) for i in range(1,6)])]
 
 # Filter by proportion of NA values (cols)
 props_NA = [sum(list(df[var]=="'-6'") or list(df[var]=="'-9'"))/len(df[var]) for var in x_vars]
-ind_keep = [i for i, var in enumerate(props_NA) if var <= 0.25]
+ind_remove = [i for i, var in enumerate(props_NA) if var > 0.25]
+
 
 # Transform MARKETVAL by making all -6 and -9 values = 0
 df = df['MARKETVAL'].replace(-6, 0)
@@ -122,7 +123,15 @@ df = df['MARKETVAL'].replace(-9, 0)
 # Make HHINUSYR a categorical variable
 df['HHINUSYR'] = np.digitize(df['HHINUSYR'], bins=np.arange(-10,2030,10))
 
+# Exclude certain variables by choice
+vars_remove = ['MORTAMT','RENT','PROTAXAMT','HOAAMT','LOTAMT','TOTBALAMT']
+vars_remove.extend(vars_dis)
+ind_remove.extend([i for i, var in enumerate(x_vars) if var in vars_remove and i not in ind_remove])
+
+
 # Final list of variables to keep
+ind_keep = list(range(len(x_vars)))
+[ind_keep.remove(i) for i in ind_remove]
 good_vars = [x_vars[i] for i in ind_keep]
 
 #%% Split into train/dev/test set
@@ -136,15 +145,18 @@ encode = [code for code_list in [type_admin, type_occ, type_struct,
                                type_demo, type_income, type_costs,
                                type_neigh, type_move] for code in code_list]
 
+X = X.copy()
 le = preprocessing.LabelEncoder()
 for i, val in enumerate(encode):
     print(x_vars[i],val)
     if val == 1:
         col = x_vars[i]
-        Xi = X.loc[:,col].copy()
+        Xi = X.loc[:,col]
         le.fit(np.unique(Xi))
         X.loc[:,col] = le.transform(Xi)
-        
+
+le.fit(np.unique(y))
+y = le.transform(y)
 # Filter by only good variables
 X = X.loc[:,good_vars]
 
@@ -156,8 +168,7 @@ X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.
 #%%
 from sklearn.ensemble import RandomForestClassifier
 
-# Have to encode all categorical variables with .astype('category')
-
 clf = RandomForestClassifier(max_depth=4, random_state=0)
 clf.fit(X_train, y_train)
-print(sum(y_val == clf.predict(X_val))/y_val.shape[0])
+accuracy = sum(y_val == clf.predict(X_val))/y_val.shape[0]
+print(accuracy)
