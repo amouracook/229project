@@ -117,7 +117,7 @@ ind_remove = [i for i, var in enumerate(props_NA) if var > 0.25]
 
 # Exclude certain variables by choice
 vars_remove = ['MORTAMT','RENT','PROTAXAMT','HOAAMT','LOTAMT','TOTBALAMT']
-vars_remove = [var for var_list in [vars_dis, vars_remove] for var in var_list]
+vars_remove.extend(vars_dis)
 ind_remove.extend([i for i, var in enumerate(x_vars) if var in vars_remove and i not in ind_remove])
 
 # Final list of variables to keep
