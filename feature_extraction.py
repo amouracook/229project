@@ -111,16 +111,16 @@ s = sum([n[f"'{i}'"] for i in range(1,6)])
 # Filter by valid only (rows)
 df = df.loc[df['DPEVLOC'].isin(["'{}'".format(i) for i in range(1,6)])]
 
-# Filter by proportion of NA values (cols)
-props_NA = [sum(list(df[var]=="'-6'") or list(df[var]=="'-9'"))/len(df[var]) for var in x_vars]
-ind_remove = [i for i, var in enumerate(props_NA) if var > 0.25]
-
 # Transform MARKETVAL by making all -6 and -9 values = 0
 df['MARKETVAL'] = df['MARKETVAL'].replace(-6, 0)
 df['MARKETVAL'] = df['MARKETVAL'].replace(-9, 0)
 
 # Make HHINUSYR a categorical variable
 df['HHINUSYR'] = np.digitize(df['HHINUSYR'], bins=np.arange(-10,2030,10))
+
+# Filter by proportion of NA values (cols)
+props_NA = [sum(list(df[var]=="'-6'") or list(df[var]=="'-9'"))/len(df[var]) for var in x_vars]
+ind_remove = [i for i, var in enumerate(props_NA) if var > 0.25]
 
 # Exclude certain variables by choice
 vars_remove = ['MORTAMT','RENT','PROTAXAMT','HOAAMT','LOTAMT','TOTBALAMT']
