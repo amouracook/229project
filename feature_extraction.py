@@ -18,8 +18,8 @@ df = pd.read_csv('SF_41860_Flat.csv', index_col=0)
 values = pd.read_csv('AHS2017ValueLabels.csv')
 values = values.loc[values['FLAT']=='YES']
 
-print(len(np.unique(values['NAME'])))
-print(df.columns)
+# print(len(np.unique(values['NAME'])))
+# print(df.columns)
 
 #%% Variable Lists
 
