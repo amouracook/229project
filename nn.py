@@ -49,7 +49,6 @@ model = torch.nn.Sequential(
     torch.nn.Linear(D_in, H),
     torch.nn.ReLU(),
     torch.nn.Linear(H, D_out),
-    torch.nn.ReLU(),
     torch.nn.Softmax()
 )
 
@@ -59,7 +58,7 @@ loss_fn = torch.nn.CrossEntropyLoss()
 
 #%%
 learning_rate = 1e-4
-for t in range(5000):
+for t in range(500):
     # Forward pass: compute predicted y by passing x to the model. Module objects
     # override the __call__ operator so you can call them like functions. When
     # doing so you pass a Tensor of input data to the Module and it produces
@@ -86,4 +85,11 @@ for t in range(5000):
     with torch.no_grad():
         for param in model.parameters():
             param -= learning_rate * param.grad
+
+#%%
+from sklearn.metrics import balanced_accuracy_score
+
+y_pred_val = model(torch.tensor(X_val).float()).argmax(axis=1)
+print(balanced_accuracy_score(y_val, y_pred_val))
+
 
