@@ -11,20 +11,22 @@ import numpy as np
 
 # N is batch size; D_in is input dimension;
 # H is hidden dimension; D_out is output dimension.
-N, D_in, H, D_out = 597, 253, 597, 1
+N, D_in, H, D_out = 597, 253, 597, 5
 
 # Create random Tensors to hold inputs and outputs
 # x = torch.randn(N, D_in)
 # y = torch.randn(N, D_out)
 
 x = np.load('X_train.npy')
-y = np.load('y_train.npy').reshape(-1,1)
+y = np.load('y_train.npy')
 
 x = torch.tensor(x)
 y = torch.tensor(y)
 
-# print(x) #64 ex, 1000 features
-# print(y) #64 ex, 10 features
+x #64 ex, 1000 features
+y #64 ex, 10 features
+x.dtype
+y.dtype
 
 X_train = np.load('X_train.npy')
 X_val = np.load('X_val.npy')
@@ -45,15 +47,24 @@ y = torch.tensor(y_train)
 # is a Module which contains other Modules, and applies them in sequence to
 # produce its output. Each Linear Module computes output from input using a
 # linear function, and holds internal Tensors for its weight and bias.
+
 model = torch.nn.Sequential(
     torch.nn.Linear(D_in, H),
     torch.nn.ReLU(),
     torch.nn.Linear(H, D_out),
+    torch.nn.ReLU(),
     torch.nn.Softmax()
 )
 
+# model = torch.nn.Sequential(
+#     torch.nn.Linear(D_in, H),
+#     torch.nn.ReLU(),
+#     torch.nn.Linear(H, D_out),
+# )
+
 # The nn package also contains definitions of popular loss functions; in this
 # case we will use Mean Squared Error (MSE) as our loss function.
+# loss_fn = torch.nn.MSELoss(reduction='sum')
 loss_fn = torch.nn.CrossEntropyLoss()
 
 #%%
@@ -63,6 +74,8 @@ for t in range(500):
     # override the __call__ operator so you can call them like functions. When
     # doing so you pass a Tensor of input data to the Module and it produces
     # a Tensor of output data.
+
+    # y_pred = model(x)
     y_pred = model(x.float())
 
     # Compute and print loss. We pass Tensors containing the predicted and true
@@ -91,5 +104,4 @@ from sklearn.metrics import balanced_accuracy_score
 
 y_pred_val = model(torch.tensor(X_val).float()).argmax(axis=1)
 print(balanced_accuracy_score(y_val, y_pred_val))
-
 
