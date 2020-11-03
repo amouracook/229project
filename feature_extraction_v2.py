@@ -168,7 +168,7 @@ for i, val in enumerate(X_encode):
     # If the a missing value is present in the variable (i.e. -6 or -9), 
     # a separate index variable is created to represent missing values, while
     # -6 and -9 are replaced with 0 in the continuous variable.
-        
+
     elif val == 0:
         if any(Xi < 0):
             le.fit([0,1])
