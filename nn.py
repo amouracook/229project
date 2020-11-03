@@ -6,15 +6,25 @@ Created on Tue Nov  3 14:34:48 2020
 @author: Aaron
 """
 import torch
+import numpy as np
 
 
 # N is batch size; D_in is input dimension;
 # H is hidden dimension; D_out is output dimension.
-N, D_in, H, D_out = 64, 1000, 100, 10
+N, D_in, H, D_out = 597, 253, 597, 1
 
 # Create random Tensors to hold inputs and outputs
-x = torch.randn(N, D_in)
-y = torch.randn(N, D_out)
+# x = torch.randn(N, D_in)
+# y = torch.randn(N, D_out)
+
+x = np.load('X_train.npy')
+y = np.load('y_train.npy').reshape(-1,1)
+
+x = torch.tensor(x)
+y = torch.tensor(y)
+
+# print(x) #64 ex, 1000 features
+# print(y) #64 ex, 10 features
 
 # Use the nn package to define our model as a sequence of layers. nn.Sequential
 # is a Module which contains other Modules, and applies them in sequence to
