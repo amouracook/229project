@@ -55,11 +55,7 @@ model = torch.nn.Sequential(
     torch.nn.ReLU(),
     torch.nn.Linear(H, D_out),
     torch.nn.ReLU(),
-<<<<<<< Updated upstream
-    torch.nn.Softmax()
-=======
     torch.nn.Softmax(dim=1)
->>>>>>> Stashed changes
 )
 
 # model = torch.nn.Sequential(
@@ -70,10 +66,7 @@ model = torch.nn.Sequential(
 
 # The nn package also contains definitions of popular loss functions; in this
 # case we will use Mean Squared Error (MSE) as our loss function.
-<<<<<<< Updated upstream
-=======
 # loss_fn = torch.nn.MSELoss(reduction='sum')
->>>>>>> Stashed changes
 loss_fn = torch.nn.CrossEntropyLoss()
 
 #%%
@@ -83,10 +76,8 @@ for t in range(5000):
     # override the __call__ operator so you can call them like functions. When
     # doing so you pass a Tensor of input data to the Module and it produces
     # a Tensor of output data.
-<<<<<<< Updated upstream
-=======
+
     # y_pred = model(x)
->>>>>>> Stashed changes
     y_pred = model(x.float())
 
     # Compute and print loss. We pass Tensors containing the predicted and true
@@ -109,8 +100,3 @@ for t in range(5000):
     with torch.no_grad():
         for param in model.parameters():
             param -= learning_rate * param.grad
-<<<<<<< Updated upstream
-
-=======
-                
->>>>>>> Stashed changes
