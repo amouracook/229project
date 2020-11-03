@@ -26,6 +26,21 @@ y = torch.tensor(y)
 # print(x) #64 ex, 1000 features
 # print(y) #64 ex, 10 features
 
+X_train = np.load('X_train.npy')
+X_val = np.load('X_val.npy')
+X_test = np.load('X_test.npy')
+y_train = np.load('y_train.npy')
+y_val = np.load('y_val.npy')
+y_test = np.load('y_test.npy')
+
+N, D_in = X_train.shape
+D_out = len(np.unique(y_train))
+
+x = torch.tensor(X_train)
+y = torch.tensor(y_train)
+
+#%%
+
 # Use the nn package to define our model as a sequence of layers. nn.Sequential
 # is a Module which contains other Modules, and applies them in sequence to
 # produce its output. Each Linear Module computes output from input using a
@@ -34,19 +49,22 @@ model = torch.nn.Sequential(
     torch.nn.Linear(D_in, H),
     torch.nn.ReLU(),
     torch.nn.Linear(H, D_out),
+    torch.nn.ReLU(),
+    torch.nn.Softmax()
 )
 
 # The nn package also contains definitions of popular loss functions; in this
 # case we will use Mean Squared Error (MSE) as our loss function.
-loss_fn = torch.nn.MSELoss(reduction='sum')
+loss_fn = torch.nn.CrossEntropyLoss()
 
+#%%
 learning_rate = 1e-4
-for t in range(500):
+for t in range(5000):
     # Forward pass: compute predicted y by passing x to the model. Module objects
     # override the __call__ operator so you can call them like functions. When
     # doing so you pass a Tensor of input data to the Module and it produces
     # a Tensor of output data.
-    y_pred = model(x)
+    y_pred = model(x.float())
 
     # Compute and print loss. We pass Tensors containing the predicted and true
     # values of y, and the loss function returns a Tensor containing the
@@ -54,7 +72,6 @@ for t in range(500):
     loss = loss_fn(y_pred, y)
     if t % 100 == 99:
         print(t, loss.item())
-
     # Zero the gradients before running the backward pass.
     model.zero_grad()
 
@@ -69,3 +86,4 @@ for t in range(500):
     with torch.no_grad():
         for param in model.parameters():
             param -= learning_rate * param.grad
+
