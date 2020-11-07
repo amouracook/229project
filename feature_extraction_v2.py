@@ -154,14 +154,14 @@ for i, val in enumerate(X_encode):
     
     if val == 1:
         # Option #1: encode categorical variables as One Hot encoder
-        OneHot = pd.get_dummies(Xi, prefix=col)
-        X = pd.concat([X, OneHot], axis=1)
-        X = X.drop(col, axis=1)
+        # OneHot = pd.get_dummies(Xi, prefix=col)
+        # X = pd.concat([X, OneHot], axis=1)
+        # X = X.drop(col, axis=1)
         
         # Option #2: encode categorical variables as Label encoder
-        # Xi = X.loc[:,col]
-        # le.fit(np.unique(Xi))
-        # X.loc[:,col] = le.transform(Xi)
+        Xi = X.loc[:,col]
+        le.fit(np.unique(Xi))
+        X.loc[:,col] = le.transform(Xi)
         
     # **Optional** 
     # Encoding of missing values in non-categorical variables
@@ -186,6 +186,22 @@ np.save('X_test', X_test)
 np.save('y_train', y_train)
 np.save('y_val', y_val)
 np.save('y_test', y_test)
+
+# Pandas dataframe for linear regression (using label-encoded inputs)
+pd_xtrain = pd.DataFrame(data = X_train, columns = X.columns)
+pd_xval = pd.DataFrame(data = X_val, columns = X.columns)
+pd_xtest = pd.DataFrame(data = X_test, columns = X.columns)
+pd_ytrain = pd.DataFrame(data = y_train, columns = ['Target'])
+pd_yval = pd.DataFrame(data = y_val, columns = ['Target'])
+pd_ytest = pd.DataFrame(data = y_test, columns = ['Target'])
+
+pd_xtrain.to_pickle('pd_X_train')
+pd_xval.to_pickle('pd_X_val')
+pd_xtest.to_pickle('pd_X_test')
+pd_ytrain.to_pickle('pd_y_train')
+pd_yval.to_pickle('pd_y_val')
+pd_ytest.to_pickle('pd_y_test')
+
 
 #%% Synthesize additional observations for all but majority class
 from imblearn.over_sampling import SMOTE
