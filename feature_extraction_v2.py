@@ -154,14 +154,17 @@ for i, val in enumerate(X_encode):
     
     if val == 1:
         # Option #1: encode categorical variables as One Hot encoder
-        # OneHot = pd.get_dummies(Xi, prefix=col)
-        # X = pd.concat([X, OneHot], axis=1)
-        # X = X.drop(col, axis=1)
+        OneHot = pd.get_dummies(Xi, prefix=col)
+        if OneHot.shape[1] <= 5:
+            X = pd.concat([X, OneHot], axis=1)
+        X = X.drop(col, axis=1)
         
         # Option #2: encode categorical variables as Label encoder
-        Xi = X.loc[:,col]
-        le.fit(np.unique(Xi))
-        X.loc[:,col] = le.transform(Xi)
+        # Xi = X.loc[:,col]
+        # if len(np.unique(Xi)) <= 5:
+        #     le.fit(np.unique(Xi))
+        #     X.loc[:,col] = le.transform(Xi)
+        # else: X = X.drop(col, axis=1)
         
     # **Optional** 
     # Encoding of missing values in non-categorical variables
@@ -178,8 +181,17 @@ for i, val in enumerate(X_encode):
 
 #%% Split into train/dev/test set
 # Train-val-test ratio = 0.6-0.2-0.2
+np.random.seed(1)
+
 X_train, X_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.2, random_state=1)
 X_train, X_val, y_train, y_val = model_selection.train_test_split(X_train, y_train, test_size=0.25, random_state=1)
+
+#%% Synthesize additional observations for all but majority class
+from imblearn.over_sampling import SMOTE
+smote = SMOTE(sampling_strategy='not majority')
+X_train, y_train = smote.fit_sample(X_train, y_train)
+
+#%%
 np.save('X_train', X_train)
 np.save('X_val', X_val)
 np.save('X_test', X_test)
@@ -202,21 +214,31 @@ pd_ytrain.to_pickle('pd_y_train')
 pd_yval.to_pickle('pd_y_val')
 pd_ytest.to_pickle('pd_y_test')
 
-
-#%% Synthesize additional observations for all but majority class
-from imblearn.over_sampling import SMOTE
-smote = SMOTE(sampling_strategy='not majority')
-X_sm, y_sm = smote.fit_sample(X_train, y_train)
-
 #%% Ridge regression classifier
 from sklearn.linear_model import RidgeClassifier
-from sklearn.metrics import balanced_accuracy_score
+from sklearn.metrics import balanced_accuracy_score, accuracy_score
 from sklearn.metrics import confusion_matrix
 
 clf = RidgeClassifier(class_weight='balanced')
 clf.fit(X_train, y_train)
-# clf.fit(X_sm, y_sm)
 
 print(clf.score(X_val, y_val))
 print(balanced_accuracy_score(y_val, clf.predict(X_val)))
 print(confusion_matrix(y_val , clf.predict(X_val)))
+
+#%%
+from xgboost import XGBClassifier
+
+model = XGBClassifier(n_estimators=500, 
+                      eta=0.01, 
+                      max_depth=3, 
+                      colsample_bytree=0.3,
+                      reg_lambda=1e5,
+                      subsample=0.6)
+model.fit(X_train, y_train)
+
+y_pred = model.predict(X_val)
+
+print(accuracy_score(y_val, y_pred))
+print(balanced_accuracy_score(y_val, y_pred))
+print(confusion_matrix(y_val, y_pred))
