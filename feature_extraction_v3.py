@@ -180,7 +180,7 @@ for i, val in enumerate(X_encode):
 #%% Make all variables categorical
 # Code copied from: https://jovian.ai/aakanksha-ns/shelter-outcome
 
-for col in X.columns:
+for col in X.loc[:,X_encode==1].columns:
     X[col] = X[col].astype('category')
 
 #%% Split into train/dev/test set
@@ -192,7 +192,7 @@ X_train, X_val, y_train, y_val = model_selection.train_test_split(X_train, y_tra
 #%% Categorical embedding for columns having more than two values
 
 # Choosing columns for embedding
-embedded_cols = {n: len(col.cat.categories) for n,col in X.items() if len(col.cat.categories) > 2}
+embedded_cols = {n: len(col.cat.categories) for n,col in X.loc[:,X_encode==1].items() if len(col.cat.categories) > 2}
 embedded_col_names = embedded_cols.keys()
 
 # Determinining size of embedding
