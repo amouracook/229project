@@ -189,7 +189,7 @@ np.random.seed(1)
 X_train, X_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.2, stratify=y, random_state=1)
 X_train, X_val, y_train, y_val = model_selection.train_test_split(X_train, y_train, test_size=0.25, stratify=y_train, random_state=1)
 
-#%% Categorical embedding for columns having more than two values
+#%% Categorical embedding for categorical columns having more than two values
 
 # Choosing columns for embedding
 embedded_cols = {n: len(col.cat.categories) for n,col in X.loc[:,X_encode==1].items() if len(col.cat.categories) > 2}
@@ -300,7 +300,7 @@ class DisasterPreparednessModel(nn.Module):
         return x
     
 #%% Model & training set-up
-model = DisasterPreparednessModel(embedding_sizes, 1)
+model = DisasterPreparednessModel(embedding_sizes, X.shape[1]-len(embedded_cols))
 to_device(model, device)
 
 # Do we want to batch it?
