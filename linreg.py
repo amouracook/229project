@@ -46,12 +46,15 @@ print(selector.score(X_train,y_train))
 print(selector.score(X_val,y_val))
 
 # Using statsmodels
-X = sm.add_constant(X_train[selected_features])
+# X = sm.add_constant(X_train[selected_features])
+X = X_train[selected_features]
 model = sm.OLS(y_train,X)
 results = model.fit()
 print(results.summary())
 qq = sm.qqplot(results.resid,line="s",markersize=3)
 plt.tight_layout()
+
+
 ypred = model.predict(X) # something wrong
 print(accuracy_score(y_val, ypred))
 print(confusion_matrix(y_val, ypred))

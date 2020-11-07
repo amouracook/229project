@@ -184,6 +184,7 @@ for col in X.columns:
 
 #%% Split into train/dev/test set
 # Train-val-test ratio = 0.6-0.2-0.2
+np.random.seed(1)
 X_train, X_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.2, stratify=y, random_state=1)
 X_train, X_val, y_train, y_val = model_selection.train_test_split(X_train, y_train, test_size=0.25, stratify=y_train, random_state=1)
 
