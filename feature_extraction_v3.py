@@ -174,7 +174,8 @@ for i, val in enumerate(X_encode):
             le.fit([0,1])
             X[col + '_MISSING'] = le.transform([i < 0 for i in X[col]])
             X[col] = X[col].clip(lower=0)
-            if col in valid_vars: np.append(valid_vars, [col + '_MISSING'])
+            valid_vars = np.append(valid_vars, [col + '_MISSING'])
+            X_encode = np.append(X_encode, val)
             
 #%% Make all variables categorical
 # Code copied from: https://jovian.ai/aakanksha-ns/shelter-outcome
