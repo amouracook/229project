@@ -17,17 +17,6 @@ N, D_in, H, D_out = 597, 253, 597, 5
 # x = torch.randn(N, D_in)
 # y = torch.randn(N, D_out)
 
-x = np.load('X_train.npy')
-y = np.load('y_train.npy')
-
-x = torch.tensor(x)
-y = torch.tensor(y)
-
-x #64 ex, 1000 features
-y #64 ex, 10 features
-x.dtype
-y.dtype
-
 X_train = np.load('X_train.npy')
 X_val = np.load('X_val.npy')
 X_test = np.load('X_test.npy')
@@ -49,6 +38,7 @@ y = torch.tensor(y_train)
 # linear function, and holds internal Tensors for its weight and bias.
 
 model = torch.nn.Sequential(
+    torch.nn.Dropout(),
     torch.nn.Linear(D_in, H),
     torch.nn.ReLU(),
     torch.nn.Linear(H, D_out),
@@ -69,7 +59,7 @@ loss_fn = torch.nn.CrossEntropyLoss()
 
 #%%
 learning_rate = 1e-4
-for t in range(500):
+for t in range(5000):
     # Forward pass: compute predicted y by passing x to the model. Module objects
     # override the __call__ operator so you can call them like functions. When
     # doing so you pass a Tensor of input data to the Module and it produces
