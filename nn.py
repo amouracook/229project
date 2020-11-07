@@ -24,11 +24,15 @@ y_train = np.load('y_train.npy')
 y_val = np.load('y_val.npy')
 y_test = np.load('y_test.npy')
 
-N, D_in = X_train.shape
-D_out = len(np.unique(y_train))
+from imblearn.over_sampling import SMOTE
+smote = SMOTE(sampling_strategy='not majority')
+X_sm, y_sm = smote.fit_sample(X_train, y_train)
 
-x = torch.tensor(X_train)
-y = torch.tensor(y_train)
+N, D_in = X_sm.shape
+D_out = len(np.unique(y_sm))
+
+x = torch.tensor(X_sm)
+y = torch.tensor(y_sm)
 
 #%%
 
@@ -41,9 +45,9 @@ model = torch.nn.Sequential(
     torch.nn.Dropout(),
     torch.nn.Linear(D_in, H),
     torch.nn.ReLU(),
+    # torch.nn.Dropout(0.4),
     torch.nn.Linear(H, D_out),
-    torch.nn.ReLU(),
-    torch.nn.Softmax()
+    torch.nn.Softmax(dim=1)
 )
 
 # model = torch.nn.Sequential(
@@ -59,7 +63,9 @@ loss_fn = torch.nn.CrossEntropyLoss()
 
 #%%
 learning_rate = 1e-4
-for t in range(5000):
+
+for t in range(500):
+>>>>>>> Stashed changes
     # Forward pass: compute predicted y by passing x to the model. Module objects
     # override the __call__ operator so you can call them like functions. When
     # doing so you pass a Tensor of input data to the Module and it produces
@@ -91,7 +97,12 @@ for t in range(5000):
 
 #%%
 from sklearn.metrics import balanced_accuracy_score
+from sklearn.metrics import confusion_matrix
+
 
 y_pred_val = model(torch.tensor(X_val).float()).argmax(axis=1)
-print(balanced_accuracy_score(y_val, y_pred_val))
+print(balanced_accuracy_score
+      (y_val, y_pred_val))
+print(confusion_matrix(y_val , y_pred_val))
+
 
