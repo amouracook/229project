@@ -6,3 +6,9 @@ person.csv
 project.csv
 ahs2017n.csv
 X_train.csv
+X_test.npy
+X_train.npy
+X_val.npy
+y_test.npy
+y_train.npy
+y_val.npy
