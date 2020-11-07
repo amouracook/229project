@@ -186,6 +186,18 @@ np.random.seed(1)
 X_train, X_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.2, random_state=1)
 X_train, X_val, y_train, y_val = model_selection.train_test_split(X_train, y_train, test_size=0.25, random_state=1)
 
+#%% Ridge regression classifier
+from sklearn.linear_model import RidgeClassifier
+from sklearn.metrics import balanced_accuracy_score, accuracy_score
+from sklearn.metrics import confusion_matrix
+
+clf = RidgeClassifier(class_weight='balanced')
+clf.fit(X_train, y_train)
+
+print(clf.score(X_val, y_val))
+print(balanced_accuracy_score(y_val, clf.predict(X_val)))
+print(confusion_matrix(y_val , clf.predict(X_val)))
+
 #%% Synthesize additional observations for all but majority class
 from imblearn.over_sampling import SMOTE
 smote = SMOTE(sampling_strategy='not majority')
@@ -213,18 +225,6 @@ pd_xtest.to_pickle('pd_X_test')
 pd_ytrain.to_pickle('pd_y_train')
 pd_yval.to_pickle('pd_y_val')
 pd_ytest.to_pickle('pd_y_test')
-
-#%% Ridge regression classifier
-from sklearn.linear_model import RidgeClassifier
-from sklearn.metrics import balanced_accuracy_score, accuracy_score
-from sklearn.metrics import confusion_matrix
-
-clf = RidgeClassifier(class_weight='balanced')
-clf.fit(X_train, y_train)
-
-print(clf.score(X_val, y_val))
-print(balanced_accuracy_score(y_val, clf.predict(X_val)))
-print(confusion_matrix(y_val , clf.predict(X_val)))
 
 #%%
 from xgboost import XGBClassifier
