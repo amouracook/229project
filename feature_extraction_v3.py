@@ -308,6 +308,12 @@ batch_size = 50
 train_dl = DataLoader(train_ds, batch_size=batch_size,shuffle=True)
 valid_dl = DataLoader(valid_ds, batch_size=batch_size,shuffle=True)
 
+i = 1
+for x1,x2,y in train_dl:
+    print(f'batch_num: {i}')
+    i += 1
+    print(x1,x2,y)
+
 # train_dl = DeviceDataLoader(train_dl, device)
 # valid_dl = DeviceDataLoader(valid_dl, device)
 
@@ -367,20 +373,20 @@ train_loop(model, epochs=10, lr=0.05, wd=0.00001)
 # test_dl = DataLoader(test_ds, batch_size=batch_size)
 
 
-#%% Synthesize additional observations for all but majority class
-from imblearn.over_sampling import SMOTE
-smote = SMOTE(sampling_strategy='not majority')
-X_sm, y_sm = smote.fit_sample(X_train, y_train)
+# #%% Synthesize additional observations for all but majority class
+# from imblearn.over_sampling import SMOTE
+# smote = SMOTE(sampling_strategy='not majority')
+# X_sm, y_sm = smote.fit_sample(X_train, y_train)
 
-#%% Ridge regression classifier
-from sklearn.linear_model import RidgeClassifier
-from sklearn.metrics import balanced_accuracy_score
-from sklearn.metrics import confusion_matrix
+# #%% Ridge regression classifier
+# from sklearn.linear_model import RidgeClassifier
+# from sklearn.metrics import balanced_accuracy_score
+# from sklearn.metrics import confusion_matrix
 
-clf = RidgeClassifier(class_weight='balanced')
-clf.fit(X_train, y_train)
-# clf.fit(X_sm, y_sm)
+# clf = RidgeClassifier(class_weight='balanced')
+# clf.fit(X_train, y_train)
+# # clf.fit(X_sm, y_sm)
 
-print(clf.score(X_val, y_val))
-print(balanced_accuracy_score(y_val, clf.predict(X_val)))
-print(confusion_matrix(y_val , clf.predict(X_val)))
+# print(clf.score(X_val, y_val))
+# print(balanced_accuracy_score(y_val, clf.predict(X_val)))
+# print(confusion_matrix(y_val , clf.predict(X_val)))
