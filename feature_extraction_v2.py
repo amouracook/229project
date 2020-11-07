@@ -155,7 +155,7 @@ for i, val in enumerate(X_encode):
     if val == 1:
         # Option #1: encode categorical variables as One Hot encoder
         OneHot = pd.get_dummies(Xi, prefix=col)
-        if OneHot.shape[1] <= 5:
+        if OneHot.shape[1] <= 20:
             X = pd.concat([X, OneHot], axis=1)
         X = X.drop(col, axis=1)
         
@@ -181,38 +181,8 @@ for i, val in enumerate(X_encode):
 
 #%% Split into train/dev/test set
 # Train-val-test ratio = 0.6-0.2-0.2
-np.random.seed(1)
-
 X_train, X_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.2, random_state=1)
 X_train, X_val, y_train, y_val = model_selection.train_test_split(X_train, y_train, test_size=0.25, random_state=1)
-
-#%% Synthesize additional observations for all but majority class
-from imblearn.over_sampling import SMOTE
-smote = SMOTE(sampling_strategy='not majority')
-X_train, y_train = smote.fit_sample(X_train, y_train)
-
-#%%
-np.save('X_train', X_train)
-np.save('X_val', X_val)
-np.save('X_test', X_test)
-np.save('y_train', y_train)
-np.save('y_val', y_val)
-np.save('y_test', y_test)
-
-# Pandas dataframe for linear regression (using label-encoded inputs)
-pd_xtrain = pd.DataFrame(data = X_train, columns = X.columns)
-pd_xval = pd.DataFrame(data = X_val, columns = X.columns)
-pd_xtest = pd.DataFrame(data = X_test, columns = X.columns)
-pd_ytrain = pd.DataFrame(data = y_train, columns = ['Target'])
-pd_yval = pd.DataFrame(data = y_val, columns = ['Target'])
-pd_ytest = pd.DataFrame(data = y_test, columns = ['Target'])
-
-pd_xtrain.to_pickle('pd_X_train')
-pd_xval.to_pickle('pd_X_val')
-pd_xtest.to_pickle('pd_X_test')
-pd_ytrain.to_pickle('pd_y_train')
-pd_yval.to_pickle('pd_y_val')
-pd_ytest.to_pickle('pd_y_test')
 
 #%% Ridge regression classifier
 from sklearn.linear_model import RidgeClassifier
@@ -226,17 +196,46 @@ print(clf.score(X_val, y_val))
 print(balanced_accuracy_score(y_val, clf.predict(X_val)))
 print(confusion_matrix(y_val , clf.predict(X_val)))
 
+#%% Synthesize additional observations for all but majority class
+from imblearn.over_sampling import SMOTE
+smote = SMOTE(sampling_strategy='not majority')
+X_train, y_train = smote.fit_sample(X_train, y_train)
+
+#%%
+# np.save('X_train', X_train)
+# np.save('X_val', X_val)
+# np.save('X_test', X_test)
+# np.save('y_train', y_train)
+# np.save('y_val', y_val)
+# np.save('y_test', y_test)
+
+# # Pandas dataframe for linear regression (using label-encoded inputs)
+# pd_xtrain = pd.DataFrame(data = X_train, columns = X.columns)
+# pd_xval = pd.DataFrame(data = X_val, columns = X.columns)
+# pd_xtest = pd.DataFrame(data = X_test, columns = X.columns)
+# pd_ytrain = pd.DataFrame(data = y_train, columns = ['Target'])
+# pd_yval = pd.DataFrame(data = y_val, columns = ['Target'])
+# pd_ytest = pd.DataFrame(data = y_test, columns = ['Target'])
+
+# pd_xtrain.to_pickle('pd_X_train')
+# pd_xval.to_pickle('pd_X_val')
+# pd_xtest.to_pickle('pd_X_test')
+# pd_ytrain.to_pickle('pd_y_train')
+# pd_yval.to_pickle('pd_y_val')
+# pd_ytest.to_pickle('pd_y_test')
+
 #%%
 from xgboost import XGBClassifier
 
 model = XGBClassifier(n_estimators=500, 
-                      eta=0.01, 
+                      eta=0.05, 
                       max_depth=3, 
                       colsample_bytree=0.3,
-                      reg_lambda=1e5,
+                      reg_lambda=1e4,
                       subsample=0.6)
 model.fit(X_train, y_train)
 
+#%%
 y_pred = model.predict(X_val)
 
 print(accuracy_score(y_val, y_pred))
