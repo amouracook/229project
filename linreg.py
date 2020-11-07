@@ -36,17 +36,18 @@ features = X_train.columns
 # Algin indices
 y_train = y_train.set_index(X_train.index)
 
+#%% Feature Selection
 estimator = LinearRegression()
-
-selector = RFE(estimator, n_features_to_select=35, step=1, verbose=0)
+n_features = 30
+selector = RFE(estimator, n_features_to_select=n_features, step=1, verbose=0)
 selector = selector.fit(X_train, y_train)
 selected_features = np.take(features, np.where(selector.support_)[0])
 print(selected_features)
 print(selector.score(X_train,y_train))
 print(selector.score(X_val,y_val))
 
-# Using statsmodels
-# X = sm.add_constant(X_train[selected_features])
+#%% Linreg Using statsmodels
+X = sm.add_constant(X_train[selected_features])
 X = X_train[selected_features]
 model = sm.OLS(y_train,X)
 results = model.fit()
@@ -54,13 +55,12 @@ print(results.summary())
 qq = sm.qqplot(results.resid,line="s",markersize=3)
 plt.tight_layout()
 
-
-ypred = model.predict(X) # something wrong
-print(accuracy_score(y_val, ypred))
-print(confusion_matrix(y_val, ypred))
+ypred = model.predict(X.T) # something wrong
+# print(accuracy_score(y_val, ypred))
+# print(confusion_matrix(y_val, ypred))
 
 #%%
-# Using sklearn
+# Linreg Using sklearn
 clf = LinearRegression()
 clf.fit(X, y_train)
 print(clf.score(X_val[selected_features], y_val))
