@@ -9,6 +9,9 @@ Created on Sat Oct 17 09:42:08 2020
 import pandas as pd
 import numpy as np
 import statsmodels.formula.api as sm
+from sklearn.metrics import balanced_accuracy_score
+from sklearn.metrics import confusion_matrix
+from imblearn.over_sampling import SMOTE
 
 # Load the dataset
 df = pd.read_csv('SF_41860_Flat.csv', index_col=0)
@@ -189,6 +192,10 @@ np.random.seed(1)
 X_train, X_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.2, stratify=y, random_state=1)
 X_train, X_val, y_train, y_val = model_selection.train_test_split(X_train, y_train, test_size=0.25, stratify=y_train, random_state=1)
 
+# Data augmentation using SMOTE
+smote = SMOTE(sampling_strategy='not majority',random_state=1)
+X_train, y_train = smote.fit_sample(X_train, y_train)
+
 #%% Categorical embedding for categorical columns having more than two values
 
 # Choosing columns for embedding
@@ -282,6 +289,7 @@ class DisasterPreparednessModel(nn.Module):
         self.bn3 = nn.BatchNorm1d(70)
         self.emb_drop = nn.Dropout(0.6)
         self.drops = nn.Dropout(0.3)
+        # self.softmax = nn.Softmax(dim=1) # we added this
         
 
     def forward(self, x_cat, x_cont):
@@ -297,6 +305,7 @@ class DisasterPreparednessModel(nn.Module):
         x = self.drops(x)
         x = self.bn3(x)
         x = self.lin3(x)
+        # x = self.softmax(x) # we added this
         return x
     
 #%% Model & training set-up
@@ -308,11 +317,11 @@ batch_size = 50
 train_dl = DataLoader(train_ds, batch_size=batch_size,shuffle=True)
 valid_dl = DataLoader(valid_ds, batch_size=batch_size,shuffle=True)
 
-i = 1
-for x1,x2,y in train_dl:
-    print(f'batch_num: {i}')
-    i += 1
-    print(x1,x2,y)
+# i = 1
+# for x1,x2,y in train_dl:
+#     print(f'batch_num: {i}')
+#     i += 1
+#     print(x1,x2,y)
 
 # train_dl = DeviceDataLoader(train_dl, device)
 # valid_dl = DeviceDataLoader(valid_dl, device)
@@ -347,6 +356,8 @@ def val_loss(model, valid_dl):
     total = 0
     sum_loss = 0
     correct = 0
+    pred_out = []
+    y_out = []
     for x1, x2, y in valid_dl:
         current_batch_size = y.shape[0]
         out = model(x1, x2)
@@ -354,19 +365,23 @@ def val_loss(model, valid_dl):
         sum_loss += current_batch_size*(loss.item())
         total += current_batch_size
         pred = torch.max(out, 1)[1]
+        pred_out = np.hstack((pred_out,np.asarray(pred)))
+        y_out = np.hstack((y_out,np.asarray(y)))
         correct += (pred == y).float().sum().item()
-    print("valid loss %.3f and accuracy %.3f" % (sum_loss/total, correct/total))
+    print(f'Balanced accuracy: {balanced_accuracy_score(y_out, pred_out)}')
+    # print("valid loss %.3f and total accuracy %.3f" % (sum_loss/total, correct/total))
+    
     return sum_loss/total, correct/total
 
 def train_loop(model, epochs, lr=0.01, wd=0.0):
     optim = get_optimizer(model, lr = lr, wd = wd)
     for i in range(epochs): 
         loss = train_model(model, optim, train_dl)
-        print("training loss: ", loss)
+        # print("training loss: ", loss)
         val_loss(model, valid_dl)
         
 #%% Training
-train_loop(model, epochs=10, lr=0.05, wd=0.00001)
+train_loop(model, epochs=10, lr=0.001, wd=0.00001)
 
 #%% Test output
 # test_ds = DisasterPreparednessDataset(X, Y, embedded_col_names)Dataset(X_val, np.zeros(len(X_val)), embedded_col_names)
