@@ -286,17 +286,17 @@ class DisasterPreparednessModel(nn.Module):
         n_emb = sum(e.embedding_dim for e in self.embeddings) #length of all embeddings combined
         self.n_emb, self.n_cont = n_emb, n_cont
         D1 = self.n_emb + self.n_cont
-        D2 = 2*(self.n_emb + self.n_cont)//5
-        D3 = 4*(self.n_emb + self.n_cont)//12
+        D2 = 2*(self.n_emb + self.n_cont)//3 + 3
+        # D3 = 4*(self.n_emb + self.n_cont)//12
         D4 = 3
         self.lin1 = nn.Linear(D1, D2) #just CS things
-        self.lin2 = nn.Linear(D2, D3)
-        self.lin3 = nn.Linear(D3, D4)
+        # self.lin2 = nn.Linear(D2, D3)
+        self.lin3 = nn.Linear(D2, D4)
         self.bn1 = nn.BatchNorm1d(self.n_cont) #n_cont = number of cont. features
-        self.bn2 = nn.BatchNorm1d(D2)
-        self.bn3 = nn.BatchNorm1d(D3)
-        self.emb_drop = nn.Dropout(0.3) # experiment with dropout probability
-        self.drops = nn.Dropout(0.3)
+        # self.bn2 = nn.BatchNorm1d(D2)
+        self.bn3 = nn.BatchNorm1d(D2)
+        self.emb_drop = nn.Dropout(0.2) # experiment with dropout probability
+        self.drops = nn.Dropout(0.5)
         
         # self.emb_drop = nn.Dropout(0.6) # experiment with dropout probability
         # self.lin1 = nn.Linear(self.n_emb + self.n_cont, 200)
@@ -309,13 +309,13 @@ class DisasterPreparednessModel(nn.Module):
     def forward(self, x_cat, x_cont):
         x = [e(x_cat[:,i]) for i,e in enumerate(self.embeddings)]
         x = torch.cat(x, 1)
-        x = self.emb_drop(x)
+        # x = self.emb_drop(x)
         x2 = self.bn1(x_cont)
         x = torch.cat([x, x2], 1)
         x = F.relu(self.lin1(x))
-        x = self.drops(x)
-        x = self.bn2(x)
-        x = F.relu(self.lin2(x))
+        # x = self.drops(x)
+        # x = self.bn2(x)
+        # x = F.relu(self.lin2(x))
         x = self.drops(x)
         x = self.bn3(x)
         x = self.lin3(x)
@@ -364,9 +364,7 @@ def val_loss(model, valid_dl):
         pred_out = np.hstack((pred_out,np.asarray(pred)))
         y_out = np.hstack((y_out,np.asarray(y)))
         correct += (pred == y).float().sum().item()
-    print(f'Loss: {sum_loss}')
-    print(f'Balanced accuracy: {balanced_accuracy_score(y_out, pred_out)}')
-    # print("valid loss %.3f and total accuracy %.3f" % (sum_loss/total, correct/total))
+    print("valid loss %.3f, total accuracy %.3f, and balanced accuracy %.3f" % (sum_loss/total, correct/total, balanced_accuracy_score(y_out, pred_out)))
     
     return sum_loss/total, correct/total
 
@@ -382,40 +380,27 @@ model = DisasterPreparednessModel(embedding_sizes, X.shape[1]-len(embedded_cols)
 to_device(model, device)
 
 # Do we want to batch it?
-batch_size = 100
+batch_size = 50
 train_dl = DataLoader(train_ds, batch_size=batch_size,shuffle=True)
 valid_dl = DataLoader(valid_ds, batch_size=batch_size,shuffle=True)
 
-# i = 1
-# for x1,x2,y in train_dl:
-#     print(f'batch_num: {i}')
-#     i += 1
-#     print(x1,x2,y)
-
-
+#%%
 # train_dl = DeviceDataLoader(train_dl, device)
 # valid_dl = DeviceDataLoader(valid_dl, device)
-train_loop(model, epochs=500, lr=1e-5, wd=1e-4)
+train_loop(model, epochs=200, lr=1e-5, wd=1e-1)
 
 #%% Test output
-# test_ds = DisasterPreparednessDataset(X, Y, embedded_col_names)Dataset(X_val, np.zeros(len(X_val)), embedded_col_names)
-# test_dl = DataLoader(test_ds, batch_size=batch_size)
+model.eval()
+test_ds = DisasterPreparednessDataset(X_val, y_val, embedded_col_names)
+test_dl = DataLoader(test_ds, batch_size=batch_size)
 
+preds = []
+with torch.no_grad():
+    for x1,x2,y in test_dl:
+        out = model(x1, x2)
+        prob = F.softmax(out, dim=1)
+        preds.append(prob)
 
-# #%% Synthesize additional observations for all but majority class
-# from imblearn.over_sampling import SMOTE
-# smote = SMOTE(sampling_strategy='not majority')
-# X_sm, y_sm = smote.fit_sample(X_train, y_train)
-
-# #%% Ridge regression classifier
-# from sklearn.linear_model import RidgeClassifier
-# from sklearn.metrics import balanced_accuracy_score
-# from sklearn.metrics import confusion_matrix
-
-# clf = RidgeClassifier(class_weight='balanced')
-# clf.fit(X_train, y_train)
-# # clf.fit(X_sm, y_sm)
-
-# print(clf.score(X_val, y_val))
-# print(balanced_accuracy_score(y_val, clf.predict(X_val)))
-# print(confusion_matrix(y_val , clf.predict(X_val)))
+y_pred = [torch.argmax(item).item() for sublist in preds for item in sublist]     
+print(balanced_accuracy_score(y_val, y_pred))
+print(confusion_matrix(y_val, y_pred))
