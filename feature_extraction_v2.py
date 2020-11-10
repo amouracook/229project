@@ -11,8 +11,9 @@ import numpy as np
 import statsmodels.formula.api as sm
 
 # Load the dataset
-df = pd.read_csv('SF_41860_Flat.csv', index_col=0)
-
+# df = pd.read_csv('SF_41860_Flat.csv', index_col=0)
+df = pd.read_csv('CA_41860_31080_Flat.csv', index_col=0)
+# CA_41860_31080_Flat
 
 #%% Variable Lists
 
@@ -103,7 +104,8 @@ s = sum([n[f"'{i}'"] for i in range(1,6)])
 # N or -6: Not applicable
 
 # Filter by valid output only (rows)
-df = df.loc[df['DPEVLOC'].isin(["'{}'".format(i) for i in range(1,6)])]
+# df = df.loc[df['DPEVLOC'].isin(["'{}'".format(i) for i in range(1,6)])]
+df = df.loc[df['DPEVLOC'].isin(["'{}'".format(i) for i in range(1,4)])]
 
 # **NOT REQUIRED IF ENCODING OF MISSING VALUES IS USED**
 # Transform MARKETVAL by making all -6 and -9 values = 0
@@ -199,6 +201,7 @@ print(confusion_matrix(y_val , clf.predict(X_val)))
 
 #%% Synthesize additional observations for all but majority class
 from imblearn.over_sampling import SMOTE
+np.random.seed(1)
 smote = SMOTE(sampling_strategy='not majority')
 X_train, y_train = smote.fit_sample(X_train, y_train)
 
@@ -228,15 +231,24 @@ X_train, y_train = smote.fit_sample(X_train, y_train)
 #%%
 from xgboost import XGBClassifier
 
-model = XGBClassifier(n_estimators=500, 
-                      eta=0.05, 
-                      max_depth=3, 
-                      colsample_bytree=0.3,
+# Just SF
+# model = XGBClassifier(n_estimators=500, 
+#                       eta=0.05, 
+#                       max_depth=3, 
+#                       colsample_bytree=0.3,
+#                       reg_lambda=1e4,
+#                       subsample=0.6)
+
+model = XGBClassifier(n_estimators=1000, 
+                      eta=0.001, 
+                      max_depth=2, 
+                      colsample_bytree=0.1,
                       reg_lambda=1e4,
-                      subsample=0.6)
+                      subsample=0.1)
+
+# SF and LA
 model.fit(X_train, y_train)
 
-#%%
 y_pred = model.predict(X_val)
 
 print(accuracy_score(y_val, y_pred))
