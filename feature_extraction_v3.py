@@ -14,7 +14,8 @@ from sklearn.metrics import confusion_matrix
 from imblearn.over_sampling import SMOTE
 
 # Load the dataset
-df = pd.read_csv('SF_41860_Flat.csv', index_col=0)
+# df = pd.read_csv('SF_41860_Flat.csv', index_col=0)
+df = pd.read_csv('CA_41860_31080_Flat.csv', index_col=0)
 
 
 #%% Variable Lists
@@ -100,13 +101,15 @@ from collections import Counter
 n = Counter(df['DPEVLOC'])
 
 # Number of valid features
-s = sum([n[f"'{i}'"] for i in range(1,6)])
+# s = sum([n[f"'{i}'"] for i in range(1,6)])
+s = sum([n[f"'{i}'"] for i in range(1,4)])
 
 # M or -9: Not reported
 # N or -6: Not applicable
 
 # Filter by valid output only (rows)
-df = df.loc[df['DPEVLOC'].isin(["'{}'".format(i) for i in range(1,6)])]
+# df = df.loc[df['DPEVLOC'].isin(["'{}'".format(i) for i in range(1,6)])]
+df = df.loc[df['DPEVLOC'].isin(["'{}'".format(i) for i in range(1,4)])]
 
 # **NOT REQUIRED IF ENCODING OF MISSING VALUES IS USED**
 # Transform MARKETVAL by making all -6 and -9 values = 0
@@ -313,7 +316,7 @@ model = DisasterPreparednessModel(embedding_sizes, X.shape[1]-len(embedded_cols)
 to_device(model, device)
 
 # Do we want to batch it?
-batch_size = 50
+batch_size = 100
 train_dl = DataLoader(train_ds, batch_size=batch_size,shuffle=True)
 valid_dl = DataLoader(valid_ds, batch_size=batch_size,shuffle=True)
 
@@ -381,7 +384,7 @@ def train_loop(model, epochs, lr=0.01, wd=0.0):
         val_loss(model, valid_dl)
         
 #%% Training
-train_loop(model, epochs=10, lr=0.001, wd=0.00001)
+train_loop(model, epochs=50, lr=0.001, wd=0.00001)
 
 #%% Test output
 # test_ds = DisasterPreparednessDataset(X, Y, embedded_col_names)Dataset(X_val, np.zeros(len(X_val)), embedded_col_names)
