@@ -12,8 +12,8 @@ import numpy as np
 
 #%%
 
-df = pd.read_csv('ahs2017n.csv')
+df = pd.read_csv('ahs2017m.csv')
 
 #%%
-df_SF = df.loc[df['OMB13CBSA']=="'41860'"]
-df_SF.to_csv('SF_41860_Flat.csv')
+df_SF = df.loc[(df['OMB13CBSA']=="'41860'") | (df['OMB13CBSA']=="'41940'") | (df['OMB13CBSA']=="'31080'")]
+df_SF.to_csv('CA_41860_41940_31080_Flat.csv')
