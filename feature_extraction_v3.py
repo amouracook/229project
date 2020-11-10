@@ -14,8 +14,8 @@ from sklearn.metrics import confusion_matrix
 from imblearn.over_sampling import SMOTE
 
 # Load the dataset
-# df = pd.read_csv('SF_41860_Flat.csv', index_col=0)
-df = pd.read_csv('CA_41860_31080_Flat.csv', index_col=0)
+df = pd.read_csv('SF_41860_Flat.csv', index_col=0)
+# df = pd.read_csv('CA_41860_31080_Flat.csv', index_col=0)
 
 
 #%% Variable Lists
@@ -286,8 +286,8 @@ class DisasterPreparednessModel(nn.Module):
         n_emb = sum(e.embedding_dim for e in self.embeddings) #length of all embeddings combined
         self.n_emb, self.n_cont = n_emb, n_cont
         D1 = self.n_emb + self.n_cont
-        D2 = 2*(self.n_emb + self.n_cont)//3
-        D3 = 4*(self.n_emb + self.n_cont)//9
+        D2 = 2*(self.n_emb + self.n_cont)//5
+        D3 = 4*(self.n_emb + self.n_cont)//12
         D4 = 3
         self.lin1 = nn.Linear(D1, D2) #just CS things
         self.lin2 = nn.Linear(D2, D3)
@@ -295,7 +295,7 @@ class DisasterPreparednessModel(nn.Module):
         self.bn1 = nn.BatchNorm1d(self.n_cont) #n_cont = number of cont. features
         self.bn2 = nn.BatchNorm1d(D2)
         self.bn3 = nn.BatchNorm1d(D3)
-        self.emb_drop = nn.Dropout(0.6) # experiment with dropout probability
+        self.emb_drop = nn.Dropout(0.3) # experiment with dropout probability
         self.drops = nn.Dropout(0.3)
         
         # self.emb_drop = nn.Dropout(0.6) # experiment with dropout probability
@@ -321,24 +321,6 @@ class DisasterPreparednessModel(nn.Module):
         x = self.lin3(x)
         # x = self.softmax(x) # we added this
         return x
-    
-#%% Model & training set-up
-model = DisasterPreparednessModel(embedding_sizes, X.shape[1]-len(embedded_cols))
-to_device(model, device)
-
-# Do we want to batch it?
-batch_size = 32
-train_dl = DataLoader(train_ds, batch_size=batch_size,shuffle=True)
-valid_dl = DataLoader(valid_ds, batch_size=batch_size,shuffle=True)
-
-# i = 1
-# for x1,x2,y in train_dl:
-#     print(f'batch_num: {i}')
-#     i += 1
-#     print(x1,x2,y)
-
-# train_dl = DeviceDataLoader(train_dl, device)
-# valid_dl = DeviceDataLoader(valid_dl, device)
 
 #%% More function definition
 
@@ -382,6 +364,7 @@ def val_loss(model, valid_dl):
         pred_out = np.hstack((pred_out,np.asarray(pred)))
         y_out = np.hstack((y_out,np.asarray(y)))
         correct += (pred == y).float().sum().item()
+    print(f'Loss: {sum_loss}')
     print(f'Balanced accuracy: {balanced_accuracy_score(y_out, pred_out)}')
     # print("valid loss %.3f and total accuracy %.3f" % (sum_loss/total, correct/total))
     
@@ -394,8 +377,25 @@ def train_loop(model, epochs, lr=0.01, wd=0.0):
         # print("training loss: ", loss)
         val_loss(model, valid_dl)
         
-#%% Training
-train_loop(model, epochs=100, lr=0.001, wd=0.00001)
+#%% Training #%% Model & training set-up
+model = DisasterPreparednessModel(embedding_sizes, X.shape[1]-len(embedded_cols))
+to_device(model, device)
+
+# Do we want to batch it?
+batch_size = 100
+train_dl = DataLoader(train_ds, batch_size=batch_size,shuffle=True)
+valid_dl = DataLoader(valid_ds, batch_size=batch_size,shuffle=True)
+
+# i = 1
+# for x1,x2,y in train_dl:
+#     print(f'batch_num: {i}')
+#     i += 1
+#     print(x1,x2,y)
+
+
+# train_dl = DeviceDataLoader(train_dl, device)
+# valid_dl = DeviceDataLoader(valid_dl, device)
+train_loop(model, epochs=500, lr=1e-5, wd=1e-4)
 
 #%% Test output
 # test_ds = DisasterPreparednessDataset(X, Y, embedded_col_names)Dataset(X_val, np.zeros(len(X_val)), embedded_col_names)
