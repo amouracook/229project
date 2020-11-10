@@ -281,17 +281,28 @@ device = get_default_device()
 class DisasterPreparednessModel(nn.Module):
     def __init__(self, embedding_sizes, n_cont):
         super().__init__()
-        self.embeddings = nn.ModuleList([nn.Embedding(categories, size) for categories,size in embedding_sizes])
+        self.embeddings = nn.ModuleList([nn.Embedding(categories, size) 
+                                         for categories,size in embedding_sizes])
         n_emb = sum(e.embedding_dim for e in self.embeddings) #length of all embeddings combined
         self.n_emb, self.n_cont = n_emb, n_cont
-        self.lin1 = nn.Linear(self.n_emb + self.n_cont, 200)
-        self.lin2 = nn.Linear(200, 70)
-        self.lin3 = nn.Linear(70, 5)
-        self.bn1 = nn.BatchNorm1d(self.n_cont)
-        self.bn2 = nn.BatchNorm1d(200)
-        self.bn3 = nn.BatchNorm1d(70)
-        self.emb_drop = nn.Dropout(0.6)
+        D1 = self.n_emb + self.n_cont
+        D2 = 2*(self.n_emb + self.n_cont)//3
+        D3 = 4*(self.n_emb + self.n_cont)//9
+        D4 = 3
+        self.lin1 = nn.Linear(D1, D2) #just CS things
+        self.lin2 = nn.Linear(D2, D3)
+        self.lin3 = nn.Linear(D3, D4)
+        self.bn1 = nn.BatchNorm1d(self.n_cont) #n_cont = number of cont. features
+        self.bn2 = nn.BatchNorm1d(D2)
+        self.bn3 = nn.BatchNorm1d(D3)
+        self.emb_drop = nn.Dropout(0.6) # experiment with dropout probability
         self.drops = nn.Dropout(0.3)
+        
+        # self.emb_drop = nn.Dropout(0.6) # experiment with dropout probability
+        # self.lin1 = nn.Linear(self.n_emb + self.n_cont, 200)
+        # self.lin2 = nn.Linear(200, 70) # play around with hidden layer sizes
+        # self.lin3 = nn.Linear(70, 5)
+        # self.drops = nn.Dropout(0.3)
         # self.softmax = nn.Softmax(dim=1) # we added this
         
 
@@ -316,7 +327,7 @@ model = DisasterPreparednessModel(embedding_sizes, X.shape[1]-len(embedded_cols)
 to_device(model, device)
 
 # Do we want to batch it?
-batch_size = 100
+batch_size = 32
 train_dl = DataLoader(train_ds, batch_size=batch_size,shuffle=True)
 valid_dl = DataLoader(valid_ds, batch_size=batch_size,shuffle=True)
 
@@ -343,13 +354,13 @@ def train_model(model, optim, train_dl):
     total = 0
     sum_loss = 0
     for x1, x2, y in train_dl:
-        batch = y.shape[0]
-        output = model(x1, x2)
+        batch = y.shape[0] # size of batch
+        output = model(x1, x2) # forward pass
         loss = F.cross_entropy(output, y)   
-        optim.zero_grad()
-        loss.backward()
-        optim.step()
-        total += batch
+        optim.zero_grad() #don't accumulate gradients in the optimizer object
+        loss.backward() # calculate gradient (backward pass)
+        optim.step() # take gradient descent step
+        total += batch # add batch loss to total loss
         sum_loss += batch*(loss.item())
     return sum_loss/total
 
@@ -384,7 +395,7 @@ def train_loop(model, epochs, lr=0.01, wd=0.0):
         val_loss(model, valid_dl)
         
 #%% Training
-train_loop(model, epochs=50, lr=0.001, wd=0.00001)
+train_loop(model, epochs=100, lr=0.001, wd=0.00001)
 
 #%% Test output
 # test_ds = DisasterPreparednessDataset(X, Y, embedded_col_names)Dataset(X_val, np.zeros(len(X_val)), embedded_col_names)
