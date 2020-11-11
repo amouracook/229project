@@ -192,10 +192,9 @@ for i, val in enumerate(X_encode):
                 
         #Option #2: encode categorical variables as Label encoder
         # Xi = X.loc[:,col]
-        # if len(np.unique(Xi)) <= 20:
-        #     le.fit(np.unique(Xi))
-        #     X.loc[:,col] = le.transform(Xi)
-        # else: X = X.drop(col, axis=1)
+        # le.fit(np.unique(Xi))
+        # X.loc[:,col] = le.transform(Xi)
+        # X = X.drop(col, axis=1)
         
     # **Optional** 
     # Encoding of missing values in non-categorical variables
@@ -325,13 +324,12 @@ print(confusion_matrix(y_val, y_pred))
 fig, ax = plt.subplots(1, 1, dpi=300)
 fig.set_size_inches(8,5)
 
-ax.grid('on')
 ax.minorticks_on()
-ax.grid(b=True, which='major', linestyle='-', linewidth=0.5, alpha=1)
-ax.grid(b=True, which='minor', color='gray', linestyle='-', linewidth=0.25, alpha=0.25)
+plot_importance(model, max_num_features=15, color='k', grid=False, ax=ax, zorder=10) # top 10 most important features
 
-ax.set(xlabel='t', ylabel='x')
-plot_importance(model, max_num_features=15, color='k', grid=True, ax=ax) # top 10 most important features
+ax.grid(b=True, which='major', axis='x', linestyle='-', linewidth=0.5, alpha=1, zorder=0)
+ax.grid(b=True, which='minor', axis='x', color='gray', linestyle='-', linewidth=0.25, alpha=0.25, zorder=0)
+
 
 fig.tight_layout()
 plt.savefig('xgboost_feature_importance.png', dpi=300)
