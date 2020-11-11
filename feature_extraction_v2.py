@@ -9,6 +9,14 @@ Created on Sat Oct 17 09:42:08 2020
 import pandas as pd
 import numpy as np
 import statsmodels.formula.api as sm
+from imblearn import over_sampling as os
+from collections import Counter
+from sklearn import preprocessing, metrics, model_selection
+from sklearn.linear_model import RidgeClassifier
+from sklearn.metrics import balanced_accuracy_score, accuracy_score
+from sklearn.metrics import confusion_matrix
+
+
 
 # Load the dataset
 df = pd.read_csv('SF_41860_Flat.csv', index_col=0)
@@ -94,11 +102,10 @@ x_vars_encode = np.asarray([code for code_list in [type_admin, type_occ, type_st
 
 #%% Data Cleaning and Filtering
 
-from collections import Counter
 n = Counter(df['DPEVLOC'])
 
 # Number of valid features
-s = sum([n[f"'{i}'"] for i in range(1,6)])
+# s = sum([n[f"'{i}'"] for i in range(1,4)])
 
 # M or -9: Not reported
 # N or -6: Not applicable
@@ -138,12 +145,29 @@ X_encode = x_vars_encode[idx]
 y = df['DPEVLOC']
 
 
+#%% Split into train/dev/test set
+# Train-val-test ratio = 0.6-0.2-0.2
+X_train, X_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.2, random_state=0)
+X_train, X_val, y_train, y_val = model_selection.train_test_split(X_train, y_train, test_size=0.25, random_state=0)
+
+smote = os.SMOTENC(categorical_features = X_encode.astype('bool'),  
+                    sampling_strategy='not majority',
+                    random_state=0)
+# smote = os.SMOTE(sampling_strategy='not majority')
+
+X_train, y_train = smote.fit_sample(X_train, y_train)
+
+X = pd.concat([X_train, X_val, X_test], ignore_index= True)
+y = pd.concat([y_train, y_val, y_test], ignore_index= True)
+
+train_sep = X_train.shape[0]
+val_sep = train_sep + X_val.shape[0]
+test_sep = val_sep + X_test.shape[0]
+
 #%% Encode input and output variables as categorical
-from sklearn import preprocessing, metrics, model_selection
 
-# Copy the input array to prevent overwriting
 X = X.copy()
-
+    
 # Transform output variable with the LabelEncoder
 le = preprocessing.LabelEncoder()
 le.fit(np.unique(y))
@@ -153,15 +177,17 @@ y = le.transform(y)
 for i, val in enumerate(X_encode):
     col = valid_vars[i]
     Xi = X.loc[:,col]
-    
     if val == 1:
         # Option #1: encode categorical variables as One Hot encoder
         OneHot = pd.get_dummies(Xi, prefix=col)
         if OneHot.shape[1] <= 20:
             X = pd.concat([X, OneHot], axis=1)
+            X_encode = np.append(X_encode, np.repeat(val, OneHot.shape[1]))
         X = X.drop(col, axis=1)
-        
-        # Option #2: encode categorical variables as Label encoder
+        X_encode = np.delete(X_encode, i)
+
+                
+        #Option #2: encode categorical variables as Label encoder
         # Xi = X.loc[:,col]
         # if len(np.unique(Xi)) <= 20:
         #     le.fit(np.unique(Xi))
@@ -182,17 +208,14 @@ for i, val in enumerate(X_encode):
             valid_vars = np.append(valid_vars, [col + '_MISSING'])
             X_encode = np.append(X_encode, val)
 
-#%% Split into train/dev/test set
-# Train-val-test ratio = 0.6-0.2-0.2
-X_train, X_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.2, random_state=1)
-X_train, X_val, y_train, y_val = model_selection.train_test_split(X_train, y_train, test_size=0.25, random_state=1)
 
+X_train, y_train = X[0:train_sep], y[0:train_sep]
+X_val, y_val = X[train_sep:val_sep], y[train_sep:val_sep]
+X_test, y_test = X[val_sep:test_sep], y[val_sep:test_sep]    
+
+    
 #%% Ridge regression classifier
 ''' NOTE: works better with label encoding instead of one hot '''
-
-from sklearn.linear_model import RidgeClassifier
-from sklearn.metrics import balanced_accuracy_score, accuracy_score
-from sklearn.metrics import confusion_matrix
 
 clf = RidgeClassifier(class_weight='balanced')
 clf.fit(X_train, y_train)
@@ -200,12 +223,6 @@ clf.fit(X_train, y_train)
 print(clf.score(X_val, y_val))
 print(balanced_accuracy_score(y_val, clf.predict(X_val)))
 print(confusion_matrix(y_val , clf.predict(X_val)))
-
-#%% Synthesize additional observations for all but majority class
-from imblearn.over_sampling import SMOTE
-np.random.seed(1)
-smote = SMOTE(sampling_strategy='not majority')
-X_train, y_train = smote.fit_sample(X_train, y_train)
 
 #%%
 # np.save('X_train', X_train)
@@ -236,15 +253,21 @@ import matplotlib.pylab as plt
 from matplotlib import pyplot
 from xgboost import plot_importance
 
-# from sklearn.metrics import f1_score
-# import numpy as np
+from sklearn.metrics import f1_score
+import numpy as np
 
-# def f1_eval(y_pred, dtrain):
-#     y_pred = np.argmax(y_pred, axis=1)
-#     y_true = dtrain.get_label()
-#     err = 1-f1_score(y_true, np.round(y_pred), average='weighted')
-#     return 'f1_err', err
+def f1_eval(y_pred, dtrain):
+    y_pred = np.argmax(y_pred, axis=1)
+    y_true = dtrain.get_label()
+    err = 1-f1_score(y_true, y_pred, average='weighted')
+    # err = balanced_accuracy_score(y_true,y_pred)
+    return 'f1_err', err
 
+def balanced_score(y_pred, dtrain):
+    y_pred = np.argmax(y_pred, axis=1)
+    y_true = dtrain.get_label()
+    err = balanced_accuracy_score(y_true,y_pred)
+    return 'balanced_accuracy', err
 # Just SF
 # model = XGBClassifier(n_estimators=100, 
 #                       eta=0.1, 
@@ -262,27 +285,45 @@ from xgboost import plot_importance
 #                       random_state=0,
 #                       objective='multi:softmax')
 
-model = XGBClassifier(booster='dart',
-                      n_estimators=500, 
-                      eta=0.01, 
-                      max_depth=5,
-                      colsample_bytree=0.2,
-                      reg_lambda=1e2,
-                      subsample=0.2,
-                      random_state=0,
-                      objective='multi:softmax',
-                      rate_drop=0.5,
-                      skip_drop=0.25)
+# model = XGBClassifier(booster='dart',
+#                       n_estimators=500, 
+#                       eta=0.01, 
+#                       max_depth=5,
+#                       colsample_bytree=0.2,
+#                       alpha=10,
+#                       # reg_lambda=1e2,
+#                       subsample=0.2,
+#                       random_state=0,
+#                       objective='multi:softmax',
+#                       rate_drop=0.5,
+#                       skip_drop=0.25)
+
+model = XGBClassifier(n_estimators=500, 
+                      eta=0.1, 
+                      max_depth=4,
+                      colsample_bytree=0.1,
+                      reg_lambda=8e2,
+                      subsample=0.3,
+                      random_state=2)
 
 model.fit(X_train, y_train, eval_metric=['merror', 'mlogloss'],
           eval_set=[(X_train, y_train), (X_val, y_val)], 
-          early_stopping_rounds=10, verbose=True)
+          # early_stopping_rounds=50, 
+          verbose=False)
 
-y_pred = model.predict(X_val, ntree_limit=500)
+
+y_pred = model.predict(X_val)
 
 print(accuracy_score(y_val, y_pred))
 print(balanced_accuracy_score(y_val, y_pred))
 print(confusion_matrix(y_val, y_pred))
+
+#%%
+# y_pred = model.predict(X_test)
+
+# print(accuracy_score(y_test, y_pred))
+# print(balanced_accuracy_score(y_test, y_pred))
+# print(confusion_matrix(y_test, y_pred))
 
 #%%
 plot_importance(model, max_num_features=10) # top 10 most important features
