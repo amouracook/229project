@@ -163,7 +163,7 @@ for i, val in enumerate(X_encode):
         
         # Option #2: encode categorical variables as Label encoder
         # Xi = X.loc[:,col]
-        # if len(np.unique(Xi)) <= 5:
+        # if len(np.unique(Xi)) <= 20:
         #     le.fit(np.unique(Xi))
         #     X.loc[:,col] = le.transform(Xi)
         # else: X = X.drop(col, axis=1)
@@ -244,7 +244,8 @@ model = XGBClassifier(n_estimators=250,
                       max_depth=2, 
                       colsample_bytree=0.2,
                       reg_lambda=1e2,
-                      subsample=0.1)
+                      subsample=0.1,
+                      random_state=0)
 
 # SF and LA
 model.fit(X_train, y_train)
@@ -263,3 +264,27 @@ plot_importance(model, max_num_features=10) # top 10 most important features
 plt.show()
 
 #%%
+from sklearn.ensemble import RandomForestClassifier
+model = RandomForestClassifier(max_depth=4, 
+                             random_state=0)
+model.fit(X_train, y_train)
+
+y_pred = model.predict(X_val)
+
+print(accuracy_score(y_val, y_pred))
+print(balanced_accuracy_score(y_val, y_pred))
+print(confusion_matrix(y_val, y_pred))
+
+#%%
+from sklearn.linear_model import LogisticRegression
+model = LogisticRegression(random_state=0, 
+                           multi_class='multinomial', 
+                           penalty='none', max_iter=10000)
+model.fit(X_train, y_train)
+y_pred = model.predict(X_val)
+
+print(accuracy_score(y_val, y_pred))
+print(balanced_accuracy_score(y_val, y_pred))
+print(confusion_matrix(y_val, y_pred))
+
+
