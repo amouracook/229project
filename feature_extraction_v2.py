@@ -13,8 +13,11 @@ from imblearn import over_sampling as os
 from collections import Counter
 from sklearn import preprocessing, metrics, model_selection
 from sklearn.linear_model import RidgeClassifier
-from sklearn.metrics import balanced_accuracy_score, accuracy_score
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import balanced_accuracy_score, accuracy_score, f1_score, confusion_matrix
+from xgboost import XGBClassifier
+import matplotlib.pylab as plt
+from matplotlib import pyplot
+from xgboost import plot_importance, plot_tree
 
 
 
@@ -248,13 +251,6 @@ print(confusion_matrix(y_val , clf.predict(X_val)))
 # pd_ytest.to_pickle('pd_y_test')
 
 #%%
-from xgboost import XGBClassifier
-import matplotlib.pylab as plt
-from matplotlib import pyplot
-from xgboost import plot_importance
-
-from sklearn.metrics import f1_score
-import numpy as np
 
 def f1_eval(y_pred, dtrain):
     y_pred = np.argmax(y_pred, axis=1)
@@ -325,9 +321,15 @@ print(confusion_matrix(y_val, y_pred))
 # print(balanced_accuracy_score(y_test, y_pred))
 # print(confusion_matrix(y_test, y_pred))
 
-#%%
-plot_importance(model, max_num_features=10) # top 10 most important features
+#%% Importance graph
+plot_importance(model, max_num_features=15) # top 10 most important features
 plt.show()
+
+#%%
+plot_tree(model, num_trees=0, dpi=300)
+plt.show()
+
+#%% Convergence plot
 
 # retrieve performance metrics
 results = model.evals_result()
@@ -354,7 +356,11 @@ pyplot.show()
 #%%
 from sklearn.ensemble import RandomForestClassifier
 model = RandomForestClassifier(max_depth=4, 
-                               random_state=0)
+                               random_state=6,
+                               n_estimators=100,
+                               min_samples_leaf=4,
+                               max_features='sqrt')
+
 model.fit(X_train, y_train)
 
 y_pred = model.predict(X_val)
