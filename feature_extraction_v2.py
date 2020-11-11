@@ -188,6 +188,8 @@ X_train, X_test, y_train, y_test = model_selection.train_test_split(X, y, test_s
 X_train, X_val, y_train, y_val = model_selection.train_test_split(X_train, y_train, test_size=0.25, random_state=1)
 
 #%% Ridge regression classifier
+''' NOTE: works better with label encoding instead of one hot '''
+
 from sklearn.linear_model import RidgeClassifier
 from sklearn.metrics import balanced_accuracy_score, accuracy_score
 from sklearn.metrics import confusion_matrix
@@ -230,6 +232,9 @@ X_train, y_train = smote.fit_sample(X_train, y_train)
 
 #%%
 from xgboost import XGBClassifier
+import matplotlib.pylab as plt
+from matplotlib import pyplot
+from xgboost import plot_importance
 
 # Just SF
 # model = XGBClassifier(n_estimators=500, 
@@ -241,14 +246,15 @@ from xgboost import XGBClassifier
 
 model = XGBClassifier(n_estimators=250, 
                       eta=0.01, 
-                      max_depth=2, 
+                      max_depth=2,
                       colsample_bytree=0.2,
                       reg_lambda=1e2,
                       subsample=0.1,
                       random_state=0)
 
-# SF and LA
-model.fit(X_train, y_train)
+model.fit(X_train, y_train, eval_metric=['merror', 'mlogloss'], 
+          eval_set=[(X_train, y_train), (X_val, y_val)], 
+          early_stopping_rounds=10, verbose=True)
 
 y_pred = model.predict(X_val)
 
@@ -256,17 +262,35 @@ print(accuracy_score(y_val, y_pred))
 print(balanced_accuracy_score(y_val, y_pred))
 print(confusion_matrix(y_val, y_pred))
 
-#%%
-import matplotlib.pylab as plt
-from matplotlib import pyplot
-from xgboost import plot_importance
 plot_importance(model, max_num_features=10) # top 10 most important features
 plt.show()
+
+# retrieve performance metrics
+results = model.evals_result()
+epochs = len(results['validation_0']['merror'])
+x_axis = range(0, epochs)
+
+# plot log loss
+fig, ax = pyplot.subplots()
+ax.plot(x_axis, results['validation_0']['mlogloss'], label='Train')
+ax.plot(x_axis, results['validation_1']['mlogloss'], label='Validation')
+ax.legend()
+pyplot.ylabel('Log Loss')
+pyplot.title('XGBoost Log Loss')
+pyplot.show()
+# plot classification error
+fig, ax = pyplot.subplots()
+ax.plot(x_axis, results['validation_0']['merror'], label='Train')
+ax.plot(x_axis, results['validation_1']['merror'], label='Validation')
+ax.legend()
+pyplot.ylabel('Classification Error')
+pyplot.title('XGBoost Classification Error')
+pyplot.show()
 
 #%%
 from sklearn.ensemble import RandomForestClassifier
 model = RandomForestClassifier(max_depth=4, 
-                             random_state=0)
+                               random_state=0)
 model.fit(X_train, y_train)
 
 y_pred = model.predict(X_val)
@@ -279,7 +303,7 @@ print(confusion_matrix(y_val, y_pred))
 from sklearn.linear_model import LogisticRegression
 model = LogisticRegression(random_state=0, 
                            multi_class='multinomial', 
-                           penalty='none', max_iter=10000)
+                           penalty='l2', max_iter=10000)
 model.fit(X_train, y_train)
 y_pred = model.predict(X_val)
 
