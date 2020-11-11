@@ -11,7 +11,10 @@ import numpy as np
 import statsmodels.formula.api as sm
 from sklearn.metrics import balanced_accuracy_score
 from sklearn.metrics import confusion_matrix
-from imblearn.over_sampling import SMOTE
+# from imblearn.over_sampling import SMOTE
+from imblearn import over_sampling as os
+from sklearn import preprocessing, metrics, model_selection
+from collections import Counter
 
 # Load the dataset
 df = pd.read_csv('SF_41860_Flat.csv', index_col=0)
@@ -97,12 +100,10 @@ x_vars_encode = np.asarray([code for code_list in [type_admin, type_occ, type_st
 
 #%% Data Cleaning and Filtering
 
-from collections import Counter
 n = Counter(df['DPEVLOC'])
 
 # Number of valid features
-# s = sum([n[f"'{i}'"] for i in range(1,6)])
-s = sum([n[f"'{i}'"] for i in range(1,4)])
+# s = sum([n[f"'{i}'"] for i in range(1,4)])
 
 # M or -9: Not reported
 # N or -6: Not applicable
@@ -141,6 +142,31 @@ X = df[valid_vars]
 X_encode = x_vars_encode[idx]
 y = df['DPEVLOC']
 
+#%% Split into train/dev/test set
+# Train-val-test ratio = 0.6-0.2-0.2
+X_train, X_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.2, random_state=0)
+X_train, X_val, y_train, y_val = model_selection.train_test_split(X_train, y_train, test_size=0.25, random_state=0)
+
+smote = os.SMOTENC(categorical_features = X_encode.astype('bool'),  
+                    sampling_strategy='not majority',
+                    random_state=0)
+# smote = os.SMOTE(sampling_strategy='not majority')
+
+X_train, y_train = smote.fit_sample(X_train, y_train)
+
+X = pd.concat([X_train, X_val, X_test], ignore_index= True)
+y = pd.concat([y_train, y_val, y_test], ignore_index= True)
+
+train_sep = X_train.shape[0]
+val_sep = train_sep + X_val.shape[0]
+test_sep = val_sep + X_test.shape[0]
+
+# Data augmentation using SMOTE
+# X_train, X_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.2, stratify=y, random_state=1)
+# X_train, X_val, y_train, y_val = model_selection.train_test_split(X_train, y_train, test_size=0.25, stratify=y_train, random_state=1)
+
+# smote = SMOTE(sampling_strategy='not majority',random_state=1)
+# X_train, y_train = smote.fit_sample(X_train, y_train)
 
 #%% Encode input and output variables as categorical
 from sklearn import preprocessing, metrics, model_selection
@@ -157,19 +183,24 @@ y = le.transform(y)
 for i, val in enumerate(X_encode):
     col = valid_vars[i]
     Xi = X.loc[:,col]
-    
+
     if val == 1:
         # Option #1: encode categorical variables as One Hot encoder
         # OneHot = pd.get_dummies(Xi, prefix=col)
-        # X = pd.concat([X, OneHot], axis=1)
+        # if OneHot.shape[1] <= 20:
+        #     X = pd.concat([X, OneHot], axis=1)
+        #     X_encode = np.append(X_encode, np.repeat(val, OneHot.shape[1]))
         # X = X.drop(col, axis=1)
-        
-        # Option #2: encode categorical variables as Label encoder
+        # X_encode = np.delete(X_encode, i)
+
+                
+        #Option #2: encode categorical variables as Label encoder
         Xi = X.loc[:,col]
         le.fit(np.unique(Xi))
         X.loc[:,col] = le.transform(Xi)
+        # X = X.drop(col, axis=1)
         
-    # **Optional** 
+    # *Optional* 
     # Encoding of missing values in non-categorical variables
     # If the a missing value is present in the variable (i.e. -6 or -9), 
     # a separate index variable is created to represent missing values, while
@@ -181,23 +212,17 @@ for i, val in enumerate(X_encode):
             X[col + '_MISSING'] = le.transform([i < 0 for i in X[col]])
             X[col] = X[col].clip(lower=0)
             valid_vars = np.append(valid_vars, [col + '_MISSING'])
-            X_encode = np.append(X_encode, val)
+            X_encode = np.append(X_encode, val)  
+            
+X_train, y_train = X[0:train_sep], y[0:train_sep]
+X_val, y_val = X[train_sep:val_sep], y[train_sep:val_sep]
+X_test, y_test = X[val_sep:test_sep], y[val_sep:test_sep]  
             
 #%% Make all variables categorical
 # Code copied from: https://jovian.ai/aakanksha-ns/shelter-outcome
 
 for col in X.loc[:,X_encode==1].columns:
     X[col] = X[col].astype('category')
-
-#%% Split into train/dev/test set
-# Train-val-test ratio = 0.6-0.2-0.2
-np.random.seed(1)
-X_train, X_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.2, stratify=y, random_state=1)
-X_train, X_val, y_train, y_val = model_selection.train_test_split(X_train, y_train, test_size=0.25, stratify=y_train, random_state=1)
-
-# Data augmentation using SMOTE
-smote = SMOTE(sampling_strategy='not majority',random_state=1)
-X_train, y_train = smote.fit_sample(X_train, y_train)
 
 #%% Categorical embedding for categorical columns having more than two values
 
