@@ -322,7 +322,20 @@ print(confusion_matrix(y_val, y_pred))
 # print(confusion_matrix(y_test, y_pred))
 
 #%% Importance graph
-plot_importance(model, max_num_features=15) # top 10 most important features
+fig, ax = plt.subplots(1, 1, dpi=300)
+fig.set_size_inches(8,5)
+
+ax.grid('on')
+ax.minorticks_on()
+ax.grid(b=True, which='major', linestyle='-', linewidth=0.5, alpha=1)
+ax.grid(b=True, which='minor', color='gray', linestyle='-', linewidth=0.25, alpha=0.25)
+
+ax.set(xlabel='t', ylabel='x')
+plot_importance(model, max_num_features=15, color='k', grid=True, ax=ax) # top 10 most important features
+
+fig.tight_layout()
+plt.savefig('xgboost_feature_importance.png', dpi=300)
+
 plt.show()
 
 #%%
