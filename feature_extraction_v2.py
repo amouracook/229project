@@ -182,18 +182,18 @@ for i, val in enumerate(X_encode):
     Xi = X.loc[:,col]
     if val == 1:
         # Option #1: encode categorical variables as One Hot encoder
-        OneHot = pd.get_dummies(Xi, prefix=col)
-        if OneHot.shape[1] <= 20:
-            X = pd.concat([X, OneHot], axis=1)
-            X_encode = np.append(X_encode, np.repeat(val, OneHot.shape[1]))
-        X = X.drop(col, axis=1)
-        X_encode = np.delete(X_encode, i)
+        # OneHot = pd.get_dummies(Xi, prefix=col)
+        # if OneHot.shape[1] <= 20:
+        #     X = pd.concat([X, OneHot], axis=1)
+        #     X_encode = np.append(X_encode, np.repeat(val, OneHot.shape[1]))
+        # X = X.drop(col, axis=1)
+        # X_encode = np.delete(X_encode, i)
 
                 
         #Option #2: encode categorical variables as Label encoder
-        # Xi = X.loc[:,col]
-        # le.fit(np.unique(Xi))
-        # X.loc[:,col] = le.transform(Xi)
+        Xi = X.loc[:,col]
+        le.fit(np.unique(Xi))
+        X.loc[:,col] = le.transform(Xi)
         # X = X.drop(col, axis=1)
         
     # **Optional** 

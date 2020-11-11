@@ -198,6 +198,7 @@ for i, val in enumerate(X_encode):
         Xi = X.loc[:,col]
         le.fit(np.unique(Xi))
         X.loc[:,col] = le.transform(Xi)
+        X[col] = X[col].astype('category')
         # X = X.drop(col, axis=1)
         
     # *Optional* 
@@ -221,8 +222,6 @@ X_test, y_test = X[val_sep:test_sep], y[val_sep:test_sep]
 #%% Make all variables categorical
 # Code copied from: https://jovian.ai/aakanksha-ns/shelter-outcome
 
-for col in X.loc[:,X_encode==1].columns:
-    X[col] = X[col].astype('category')
 
 #%% Categorical embedding for categorical columns having more than two values
 
