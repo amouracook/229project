@@ -11,8 +11,8 @@ import numpy as np
 import statsmodels.formula.api as sm
 
 # Load the dataset
-# df = pd.read_csv('SF_41860_Flat.csv', index_col=0)
-df = pd.read_csv('CA_41860_31080_Flat.csv', index_col=0)
+df = pd.read_csv('SF_41860_Flat.csv', index_col=0)
+# df = pd.read_csv('CA_41860_31080_Flat.csv', index_col=0)
 # CA_41860_31080_Flat
 
 #%% Variable Lists
@@ -156,17 +156,17 @@ for i, val in enumerate(X_encode):
     
     if val == 1:
         # Option #1: encode categorical variables as One Hot encoder
-        OneHot = pd.get_dummies(Xi, prefix=col)
-        if OneHot.shape[1] <= 20:
-            X = pd.concat([X, OneHot], axis=1)
-        X = X.drop(col, axis=1)
+        # OneHot = pd.get_dummies(Xi, prefix=col)
+        # if OneHot.shape[1] <= 20:
+        #     X = pd.concat([X, OneHot], axis=1)
+        # X = X.drop(col, axis=1)
         
         # Option #2: encode categorical variables as Label encoder
-        # Xi = X.loc[:,col]
-        # if len(np.unique(Xi)) <= 5:
-        #     le.fit(np.unique(Xi))
-        #     X.loc[:,col] = le.transform(Xi)
-        # else: X = X.drop(col, axis=1)
+        Xi = X.loc[:,col]
+        if len(np.unique(Xi)) <= 5:
+            le.fit(np.unique(Xi))
+            X.loc[:,col] = le.transform(Xi)
+        else: X = X.drop(col, axis=1)
         
     # **Optional** 
     # Encoding of missing values in non-categorical variables
@@ -240,10 +240,10 @@ from xgboost import XGBClassifier
 #                       subsample=0.6)
 
 model = XGBClassifier(n_estimators=1000, 
-                      eta=0.001, 
+                      eta=0.01, 
                       max_depth=2, 
-                      colsample_bytree=0.1,
-                      reg_lambda=1e4,
+                      colsample_bytree=0.2,
+                      reg_lambda=1e2,
                       subsample=0.1)
 
 # SF and LA
@@ -254,3 +254,12 @@ y_pred = model.predict(X_val)
 print(accuracy_score(y_val, y_pred))
 print(balanced_accuracy_score(y_val, y_pred))
 print(confusion_matrix(y_val, y_pred))
+
+#%%
+import matplotlib.pylab as plt
+from matplotlib import pyplot
+from xgboost import plot_importance
+plot_importance(model, max_num_features=15) # top 10 most important features
+plt.show()
+
+#%%
