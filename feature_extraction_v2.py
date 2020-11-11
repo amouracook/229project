@@ -156,17 +156,17 @@ for i, val in enumerate(X_encode):
     
     if val == 1:
         # Option #1: encode categorical variables as One Hot encoder
-        # OneHot = pd.get_dummies(Xi, prefix=col)
-        # if OneHot.shape[1] <= 20:
-        #     X = pd.concat([X, OneHot], axis=1)
-        # X = X.drop(col, axis=1)
+        OneHot = pd.get_dummies(Xi, prefix=col)
+        if OneHot.shape[1] <= 20:
+            X = pd.concat([X, OneHot], axis=1)
+        X = X.drop(col, axis=1)
         
         # Option #2: encode categorical variables as Label encoder
-        Xi = X.loc[:,col]
-        if len(np.unique(Xi)) <= 5:
-            le.fit(np.unique(Xi))
-            X.loc[:,col] = le.transform(Xi)
-        else: X = X.drop(col, axis=1)
+        # Xi = X.loc[:,col]
+        # if len(np.unique(Xi)) <= 5:
+        #     le.fit(np.unique(Xi))
+        #     X.loc[:,col] = le.transform(Xi)
+        # else: X = X.drop(col, axis=1)
         
     # **Optional** 
     # Encoding of missing values in non-categorical variables
@@ -239,7 +239,7 @@ from xgboost import XGBClassifier
 #                       reg_lambda=1e4,
 #                       subsample=0.6)
 
-model = XGBClassifier(n_estimators=1000, 
+model = XGBClassifier(n_estimators=250, 
                       eta=0.01, 
                       max_depth=2, 
                       colsample_bytree=0.2,
@@ -259,7 +259,7 @@ print(confusion_matrix(y_val, y_pred))
 import matplotlib.pylab as plt
 from matplotlib import pyplot
 from xgboost import plot_importance
-plot_importance(model, max_num_features=15) # top 10 most important features
+plot_importance(model, max_num_features=10) # top 10 most important features
 plt.show()
 
 #%%
