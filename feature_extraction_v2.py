@@ -236,32 +236,55 @@ import matplotlib.pylab as plt
 from matplotlib import pyplot
 from xgboost import plot_importance
 
+# from sklearn.metrics import f1_score
+# import numpy as np
+
+# def f1_eval(y_pred, dtrain):
+#     y_pred = np.argmax(y_pred, axis=1)
+#     y_true = dtrain.get_label()
+#     err = 1-f1_score(y_true, np.round(y_pred), average='weighted')
+#     return 'f1_err', err
+
 # Just SF
-# model = XGBClassifier(n_estimators=500, 
-#                       eta=0.05, 
+# model = XGBClassifier(n_estimators=100, 
+#                       eta=0.1, 
 #                       max_depth=3, 
 #                       colsample_bytree=0.3,
-#                       reg_lambda=1e4,
-#                       subsample=0.6)
+#                       reg_lambda=1e1,
+#                       subsample=0.2)
 
-model = XGBClassifier(n_estimators=250, 
+# model = XGBClassifier(n_estimators=250, 
+#                       eta=0.01, 
+#                       max_depth=2,
+#                       colsample_bytree=0.2,
+#                       reg_lambda=1e2,
+#                       subsample=0.1,
+#                       random_state=0,
+#                       objective='multi:softmax')
+
+model = XGBClassifier(booster='dart',
+                      n_estimators=500, 
                       eta=0.01, 
-                      max_depth=2,
+                      max_depth=5,
                       colsample_bytree=0.2,
                       reg_lambda=1e2,
-                      subsample=0.1,
-                      random_state=0)
+                      subsample=0.2,
+                      random_state=0,
+                      objective='multi:softmax',
+                      rate_drop=0.5,
+                      skip_drop=0.25)
 
-model.fit(X_train, y_train, eval_metric=['merror', 'mlogloss'], 
+model.fit(X_train, y_train, eval_metric=['merror', 'mlogloss'],
           eval_set=[(X_train, y_train), (X_val, y_val)], 
           early_stopping_rounds=10, verbose=True)
 
-y_pred = model.predict(X_val)
+y_pred = model.predict(X_val, ntree_limit=500)
 
 print(accuracy_score(y_val, y_pred))
 print(balanced_accuracy_score(y_val, y_pred))
 print(confusion_matrix(y_val, y_pred))
 
+#%%
 plot_importance(model, max_num_features=10) # top 10 most important features
 plt.show()
 
