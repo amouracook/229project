@@ -407,6 +407,14 @@ def train_loop(model, epochs, lr=0.01, wd=0.0):
         # print("training loss: ", loss)
         val_loss(model, valid_dl)
         
+def predict(outs,w):
+    if type(w).__module__ == np.__name__:
+        # if w is a numpy array convert to tensor
+        w = torch.from_numpy(w)
+    weights = [torch.mul(outs[batch],w) for batch in range(len(outs))]
+    preds = [torch.argmax(item).item() for sublist in weights for item in sublist]
+    return preds
+        
 #%% Training #%% Model & training set-up
 model = DisasterPreparednessModel(embedding_sizes, X.shape[1]-len(embedded_cols))
 to_device(model, device)
@@ -425,18 +433,30 @@ train_loop(model, epochs=200, lr=1e-5, wd=1e-1)
 test_ds = DisasterPreparednessDataset(X_val, y_val, embedded_col_names)
 test_dl = DataLoader(test_ds, batch_size=batch_size)
 
-preds = []
+outs = []
 with torch.no_grad():
     for x1,x2,y in test_dl:
         out = model(x1, x2)
         prob = torch.sigmoid(out)
-        preds.append(prob)
+        outs.append(prob)
 
-y_pred = [torch.argmax(item).item() for sublist in preds for item in sublist] 
+y_pred = [torch.argmax(item).item() for sublist in outs for item in sublist] 
 y_true = np.argmax(np.asarray(y_val), axis=1)
 print(accuracy_score(y_true, y_pred))
 print(balanced_accuracy_score(y_true, y_pred))
 print(confusion_matrix(y_true, y_pred))
+
+#%% Weight adjustment vector
+
+# n = Counter(df['DPEVLOC'])
+# n = np.asarray([n[f"'{i}'"] for i in range(1,4)])
+# w = sum(n)/n
+# w /= np.linalg.norm(w)
+w = np.array([0.3,0.3,0.4])
+y_pred_adj = predict(outs,w)
+print(balanced_accuracy_score(y_true, y_pred_adj))
+print(accuracy_score(y_true, y_pred_adj))
+print(confusion_matrix(y_true, y_pred_adj))
 
 
 #%% Test output
