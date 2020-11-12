@@ -102,9 +102,11 @@ x_vars_encode = np.asarray([code for code_list in [type_admin, type_occ, type_st
 
 n = Counter(df['DPEVLOC'])
 
-# Number of valid features
 n = np.asarray([n[f"'{i}'"] for i in range(1,4)])
 w = np.sqrt(sum(n)/n)
+
+# Number of valid features
+# s = sum([n[f"'{i}'"] for i in range(1,4)])
 
 # M or -9: Not reported
 # N or -6: Not applicable
@@ -177,8 +179,10 @@ X = X.copy()
 
 # Transform output variable with the LabelEncoder
 le = preprocessing.LabelEncoder()
-le.fit(np.unique(y))
-y = le.transform(y)
+# le.fit(np.unique(y))
+# y = le.transform(y)
+
+y = pd.get_dummies(y)
 
 # Loop through each input variable and encode categorical ones (i.e. X_incode == 1)
 for i, val in enumerate(X_encode):
@@ -256,10 +260,10 @@ class DisasterPreparednessDataset(Dataset):
         X = X.copy()
         self.X1 = X.loc[:,embedded_col_names].copy().values.astype(np.int64) #categorical columns
         self.X2 = X.drop(columns=embedded_col_names).copy().values.astype(np.float32) #numerical columns
-        self.y = Y
+        self.y = np.asarray(Y)
         
     def __len__(self):
-        return len(self.y)
+        return self.y.shape[0]
     
     def __getitem__(self, idx):
         return self.X1[idx], self.X2[idx], self.y[idx]
@@ -311,8 +315,8 @@ class DisasterPreparednessModel(nn.Module):
         n_emb = sum(e.embedding_dim for e in self.embeddings) #length of all embeddings combined
         self.n_emb, self.n_cont = n_emb, n_cont
         D1 = self.n_emb + self.n_cont
-        D2 = 10*2*(self.n_emb + self.n_cont)//3 + 3
-        # D2 = 50 #int(np.sqrt((self.n_emb + self.n_cont)*3))
+        D2 = 2*(self.n_emb + self.n_cont)//3 + 3
+        # D2 = 100 #int(np.sqrt((self.n_emb + self.n_cont)*3))
         # D3 = 4*(self.n_emb + self.n_cont)//12
         D4 = 3
         self.lin1 = nn.Linear(D1, D2) #just CS things
@@ -364,8 +368,8 @@ def train_model(model, optim, train_dl):
     for x1, x2, y in train_dl:
         batch = y.shape[0] # size of batch
         output = model(x1, x2) # forward pass
-        loss = F.cross_entropy(output, y)
-        # loss = F.cross_entropy(output, y, weight=torch.tensor(w).float())
+        loss = F.binary_cross_entropy_with_logits(output, y.type_as(output))
+        # loss = F.binary_cross_entropy_with_logits(output, y.type_as(output), weight=torch.tensor(w).float())   
         optim.zero_grad() #don't accumulate gradients in the optimizer object
         loss.backward() # calculate gradient (backward pass)
         optim.step() # take gradient descent step
@@ -384,14 +388,14 @@ def val_loss(model, valid_dl):
     for x1, x2, y in valid_dl:
         current_batch_size = y.shape[0]
         out = model(x1, x2)
-        loss = F.cross_entropy(out, y)
-        # loss = F.cross_entropy(out, y, weight=torch.tensor(w).float())
+        loss = F.binary_cross_entropy_with_logits(out, y.type_as(out))
+        # loss = F.binary_cross_entropy_with_logits(out, y.type_as(out), weight=torch.tensor(w).float())
         sum_loss += current_batch_size*(loss.item())
         total += current_batch_size
         pred = torch.max(out, 1)[1]
         pred_out = np.hstack((pred_out,np.asarray(pred)))
-        y_out = np.hstack((y_out,np.asarray(y)))
-        correct += (pred == y).float().sum().item()
+        y_out = np.hstack((y_out,np.argmax(y, axis=1)))
+        correct += (pred == np.argmax(y, axis=1)).float().sum().item()
     print("valid loss %.3f, total accuracy %.3f, and balanced accuracy %.3f" % (sum_loss/total, correct/total, balanced_accuracy_score(y_out, pred_out)))
     
     return sum_loss/total, correct/total
@@ -409,14 +413,13 @@ to_device(model, device)
 
 # Do we want to batch it?
 batch_size = 32
-train_dl = DataLoader(train_ds, batch_size=batch_size, shuffle=True)
-valid_dl = DataLoader(valid_ds, batch_size=batch_size, shuffle=True)
+train_dl = DataLoader(train_ds, batch_size=batch_size,shuffle=True)
+valid_dl = DataLoader(valid_ds, batch_size=batch_size,shuffle=True)
 
 #%%
 # train_dl = DeviceDataLoader(train_dl, device)
 # valid_dl = DeviceDataLoader(valid_dl, device)
-train_loop(model, epochs=200, lr=2e-5, wd=1e-1)
-
+train_loop(model, epochs=200, lr=1e-5, wd=1e-1)
 
 #%%
 test_ds = DisasterPreparednessDataset(X_val, y_val, embedded_col_names)
@@ -426,13 +429,15 @@ preds = []
 with torch.no_grad():
     for x1,x2,y in test_dl:
         out = model(x1, x2)
-        prob = F.softmax(out, dim=1)
+        prob = torch.sigmoid(out)
         preds.append(prob)
 
-y_pred = [torch.argmax(item).item() for sublist in preds for item in sublist]     
-print(balanced_accuracy_score(y_val, y_pred))
-print(accuracy_score(y_val, y_pred))
-print(confusion_matrix(y_val, y_pred))
+y_pred = [torch.argmax(item).item() for sublist in preds for item in sublist] 
+y_true = np.argmax(np.asarray(y_val), axis=1)
+print(accuracy_score(y_true, y_pred))
+print(balanced_accuracy_score(y_true, y_pred))
+print(confusion_matrix(y_true, y_pred))
+
 
 #%% Test output
 # model.eval()
@@ -443,10 +448,10 @@ print(confusion_matrix(y_val, y_pred))
 # with torch.no_grad():
 #     for x1,x2,y in test_dl:
 #         out = model(x1, x2)
-#         prob = F.softmax(out, dim=1)
+#         prob = torch.sigmoid(out)
 #         preds.append(prob)
 
-# y_pred = [torch.argmax(item).item() for sublist in preds for item in sublist]     
-# print(balanced_accuracy_score(y_test, y_pred))
-# print(accuracy_score(y_test, y_pred))
-# print(confusion_matrix(y_test, y_pred))
+# y_pred = [torch.argmax(item).item() for sublist in preds for item in sublist]    
+# print(accuracy_score(np.argmax(np.asarray(y_test), axis=1), y_pred))
+# print(balanced_accuracy_score(np.argmax(np.asarray(y_test), axis=1), y_pred))
+# print(confusion_matrix(np.argmax(np.asarray(y_test), axis=1), y_pred))

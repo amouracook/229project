@@ -295,11 +295,11 @@ def balanced_score(y_pred, dtrain):
 
 model = XGBClassifier(n_estimators=500, 
                       eta=0.1, 
-                      max_depth=4,
+                      max_depth=3,
                       colsample_bytree=0.1,
-                      reg_lambda=8e2,
+                      reg_lambda=5e2,
                       subsample=0.3,
-                      random_state=2)
+                      random_state=4)
 
 model.fit(X_train, y_train, eval_metric=['merror', 'mlogloss'],
           eval_set=[(X_train, y_train), (X_val, y_val)], 
@@ -314,11 +314,11 @@ print(balanced_accuracy_score(y_val, y_pred))
 print(confusion_matrix(y_val, y_pred))
 
 #%%
-# y_pred = model.predict(X_test)
+y_pred = model.predict(X_test)
 
-# print(accuracy_score(y_test, y_pred))
-# print(balanced_accuracy_score(y_test, y_pred))
-# print(confusion_matrix(y_test, y_pred))
+print(accuracy_score(y_test, y_pred))
+print(balanced_accuracy_score(y_test, y_pred))
+print(confusion_matrix(y_test, y_pred))
 
 #%% Importance graph
 fig, ax = plt.subplots(1, 1, dpi=300)
@@ -366,10 +366,10 @@ pyplot.show()
 
 #%%
 from sklearn.ensemble import RandomForestClassifier
-model = RandomForestClassifier(max_depth=4, 
-                               random_state=6,
+model = RandomForestClassifier(max_depth=3, 
+                               random_state=2,
                                n_estimators=100,
-                               min_samples_leaf=4,
+                               min_samples_leaf=3,
                                max_features='sqrt')
 
 model.fit(X_train, y_train)
