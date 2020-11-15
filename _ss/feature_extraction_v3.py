@@ -15,14 +15,14 @@ from sklearn.metrics import confusion_matrix
 from imblearn import over_sampling as os
 from sklearn import preprocessing, metrics, model_selection
 from collections import Counter
-import kornia as kr
+# import kornia as kr
 
 # Load the dataset
 
 # 
 df1 = pd.read_csv('SF_41860_Flat.csv', index_col=0)
-df2 = pd.read_csv('SJ_41940_Flat.csv', index_col=0)
-df3 = pd.read_csv('CA_41860_31080_Flat.csv', index_col=0)
+# df2 = pd.read_csv('SJ_41940_Flat.csv', index_col=0)
+# df3 = pd.read_csv('CA_41860_31080_Flat.csv', index_col=0)
 
 # df = pd.concat([df1,df2], ignore_index=True)
 # df = pd.concat([df2,df3], ignore_index=True)
@@ -261,6 +261,9 @@ import torch.optim as torch_optim
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import models
+
+torch.manual_seed(0)
+np.random.seed(0)
 
 class DisasterPreparednessDataset(Dataset):
     def __init__(self, X, Y, embedded_col_names):
