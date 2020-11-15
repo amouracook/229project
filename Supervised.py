@@ -34,48 +34,6 @@ print(confusion_matrix(y_val , clf.predict(X_val)))
 from xgboost import XGBClassifier
 from xgboost import plot_importance, plot_tree
 
-def f1_eval(y_pred, dtrain):
-    y_pred = np.argmax(y_pred, axis=1)
-    y_true = dtrain.get_label()
-    err = 1-f1_score(y_true, y_pred, average='weighted')
-    # err = balanced_accuracy_score(y_true,y_pred)
-    return 'f1_err', err
-
-def balanced_score(y_pred, dtrain):
-    y_pred = np.argmax(y_pred, axis=1)
-    y_true = dtrain.get_label()
-    err = balanced_accuracy_score(y_true,y_pred)
-    return 'balanced_accuracy', err
-# Just SF
-# model = XGBClassifier(n_estimators=100, 
-#                       eta=0.1, 
-#                       max_depth=3, 
-#                       colsample_bytree=0.3,
-#                       reg_lambda=1e1,
-#                       subsample=0.2)
-
-# model = XGBClassifier(n_estimators=250, 
-#                       eta=0.01, 
-#                       max_depth=2,
-#                       colsample_bytree=0.2,
-#                       reg_lambda=1e2,
-#                       subsample=0.1,
-#                       random_state=0,
-#                       objective='multi:softmax')
-
-# model = XGBClassifier(booster='dart',
-#                       n_estimators=500, 
-#                       eta=0.01, 
-#                       max_depth=5,
-#                       colsample_bytree=0.2,
-#                       alpha=10,
-#                       # reg_lambda=1e2,
-#                       subsample=0.2,
-#                       random_state=0,
-#                       objective='multi:softmax',
-#                       rate_drop=0.5,
-#                       skip_drop=0.25)
-
 model = XGBClassifier(n_estimators=500, 
                       eta=0.1, 
                       max_depth=3,
