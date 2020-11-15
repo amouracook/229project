@@ -13,7 +13,7 @@ from collections import Counter
 from sklearn import preprocessing, model_selection
 
 
-def feature_extraction(dataset, onehot_option = False, smote_option = True, y_stratify=False):
+def feature_extraction(dataset, onehot_option = False, smote_option = True, y_stratify=False, seed=0):
     '''
         onehot_option: False = label encode features, True = one-hot encode features
         smote_option: False = don't use SMOTE, True = use SMOTE
@@ -149,8 +149,8 @@ def feature_extraction(dataset, onehot_option = False, smote_option = True, y_st
     #%% Split into train/dev/test set
     # Train-val-test ratio = 0.6-0.2-0.2
     if y_stratify:
-        X_train, X_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.2, stratify=y, random_state=0)
-        X_train, X_val, y_train, y_val = model_selection.train_test_split(X_train, y_train, test_size=0.25, stratify=y_train, random_state=0)
+        X_train, X_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.2, stratify=y, random_state=seed)
+        X_train, X_val, y_train, y_val = model_selection.train_test_split(X_train, y_train, test_size=0.25, stratify=y_train, random_state=seed)
     else:
         X_train, X_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.2, random_state=0)
         X_train, X_val, y_train, y_val = model_selection.train_test_split(X_train, y_train, test_size=0.25, random_state=0)
@@ -159,7 +159,7 @@ def feature_extraction(dataset, onehot_option = False, smote_option = True, y_st
         # Use SMOTE for continuous features to oversample the non-majority classes
         smote = os.SMOTENC(categorical_features = X_encode.astype('bool'),  
                             sampling_strategy='not majority',
-                            random_state=0)
+                            random_state=seed)
         # smote = os.SMOTE(sampling_strategy='not majority')
         
         X_train, y_train = smote.fit_sample(X_train, y_train)
