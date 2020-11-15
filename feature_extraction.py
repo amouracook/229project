@@ -13,7 +13,7 @@ from collections import Counter
 from sklearn import preprocessing, model_selection
 
 
-def feature_extraction(dataset, onehot_option = False, smote_option = True, y_stratify=False, seed=0):
+def feature_extraction(dataset, onehot_option = False, smote_option = True, y_stratify=False, seed=0, as_category=True):
     '''
         onehot_option: False = label encode features, True = one-hot encode features
         smote_option: False = don't use SMOTE, True = use SMOTE
@@ -201,7 +201,7 @@ def feature_extraction(dataset, onehot_option = False, smote_option = True, y_st
                 Xi = X.loc[:,col]
                 le.fit(np.unique(Xi))
                 X.loc[:,col] = le.transform(Xi)
-                X[col] = X[col].astype('category')
+                if as_category: X[col] = X[col].astype('category')
                 # X = X.drop(col, axis=1)
             
         # **Optional** 

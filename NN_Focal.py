@@ -17,13 +17,15 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import models
 import kornia as kr
-torch.manual_seed(1)
-np.random.seed(0)
+from scipy.optimize import minimize
+
+torch.manual_seed(2)
+# np.random.seed(0)
 
 # dataset: 0 = SF data only, 1 = SF + LA data, 2 = SF + SJ data, 3 = All of CA
 
 X, X_encode, X_train, y_train, X_val, y_val, X_test, y_test, n = \
-    feature_extraction(dataset = 0, onehot_option = False, smote_option = False)
+    feature_extraction(dataset = 0, onehot_option = False, smote_option = False, y_stratify=True, seed=0)
     
     
 #%% Categorical embedding for categorical columns having more than two values
@@ -110,7 +112,7 @@ class DisasterPreparednessModel(nn.Module):
         self.bn2 = nn.BatchNorm1d(D2)
         self.emb_drop = nn.Dropout(0.2) # dropout probability for features
         self.drops = nn.Dropout(0.5) # dropout probability for hidden layers
-        self.softmax = nn.Sigmoid()
+        self.sigmoid = nn.Sigmoid()
 
     def forward(self, x_cat, x_cont):
         x = [e(x_cat[:,i]) for i,e in enumerate(self.embeddings)]
@@ -206,48 +208,41 @@ alpha = 0.05
 gamma = 3
 focal = kr.losses.FocalLoss(alpha=alpha, gamma=gamma, reduction='mean')
 
-train_loop(model, focal, epochs=1200, lr=1e-5, wd=1e-1)
+train_loop(model, focal, epochs=100, lr=1e-5, wd=1e-4)
 
+#%% Balanced accuracy
+def balanced_accuracy(weights, test_dl, y_eval, model, print_flag=False):
+    preds = []
+    with torch.no_grad():
+        for x1,x2,y in test_dl:
+            out = model(x1, x2)*torch.tensor(weights)
+            # print(prob)
+            preds.append(out)
+
+    y_pred = [torch.argmax(item).item() for sublist in preds for item in sublist]  
+    if print_flag: 
+        print(accuracy_score(y_eval, y_pred),balanced_accuracy_score(y_eval, y_pred))
+        print(confusion_matrix(y_eval, y_pred))
+    return -balanced_accuracy_score(y_eval, y_pred)
+
+#%% Train accuracy
+train_ds = DisasterPreparednessDataset(X_train, y_train, embedded_col_names)
+train_dl = DataLoader(train_ds, batch_size=batch_size)
+balanced_accuracy([1,1,1], train_dl, y_train, model, True)
 
 #%% Validation accuracy
-test_ds = DisasterPreparednessDataset(X_val, y_val, embedded_col_names)
-test_dl = DataLoader(test_ds, batch_size=batch_size)
+val_ds = DisasterPreparednessDataset(X_val, y_val, embedded_col_names)
+val_dl = DataLoader(val_ds, batch_size=batch_size)
 
-outs = []
-with torch.no_grad():
-    for x1,x2,y in test_dl:
-        out = model(x1, x2)
-        prob = F.softmax(out, dim=1)
-        outs.append(prob)
+balanced_accuracy([1,1,1],  val_dl, y_val, model, True)
 
-y_pred = [torch.argmax(item).item() for sublist in outs for item in sublist]          
-print(balanced_accuracy_score(y_val, y_pred))
-print(accuracy_score(y_val, y_pred))
-print(confusion_matrix(y_val, y_pred))
-
-#%% Threshold modification by weights
-
-y_pred_adj = predict(outs,w)
-print(balanced_accuracy_score(y_val, y_pred_adj))
-print(accuracy_score(y_val, y_pred_adj))
-print(confusion_matrix(y_val, y_pred_adj))   
-
+w_opt=minimize(balanced_accuracy, x0=[1,1,1], args=(val_dl, y_val, model), method='Powell')
+balanced_accuracy(w_opt.x, val_dl, y_val, model, True)
 
 #%% Test output
-model.eval()
 test_ds = DisasterPreparednessDataset(X_test, y_test, embedded_col_names)
 test_dl = DataLoader(test_ds, batch_size=batch_size)
 
-preds = []
-with torch.no_grad():
-    for x1,x2,y in test_dl:
-        out = model(x1, x2)
-        prob = F.softmax(out, dim=1)
-        preds.append(prob)
-
-y_pred = [torch.argmax(item).item() for sublist in preds for item in sublist]     
-print(balanced_accuracy_score(y_test, y_pred))
-print(accuracy_score(y_test, y_pred))
-print(confusion_matrix(y_test, y_pred))
-
+balanced_accuracy([1,1,1], test_dl, y_test, model, True)
+balanced_accuracy(w_opt.x, test_dl, y_test, model, True)
 
