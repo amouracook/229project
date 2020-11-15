@@ -307,7 +307,6 @@ model.fit(X_train, y_train, eval_metric=['merror', 'mlogloss'],
           # early_stopping_rounds=50, 
           verbose=False)
 
-
 y_pred = model.predict(X_val)
 
 print(accuracy_score(y_val, y_pred))
@@ -326,9 +325,10 @@ fig, ax = plt.subplots(1, 1, dpi=300)
 fig.set_size_inches(8,5)
 
 ax.minorticks_on()
+
 plot_importance(model, max_num_features=15, color='k', grid=False, ax=ax, zorder=10) # top 10 most important features
 
-ax.grid(b=True, which='major', axis='x', linestyle='-', linewidth=0.5, alpha=1, zorder=0)
+ax.grid(b=True, which='major', axis='x', linestyle='-', linewidth=0.5, alpha=0.5, zorder=0)
 ax.grid(b=True, which='minor', axis='x', color='gray', linestyle='-', linewidth=0.25, alpha=0.25, zorder=0)
 
 
@@ -349,15 +349,18 @@ epochs = len(results['validation_0']['merror'])
 x_axis = range(0, epochs)
 
 # plot log loss
-fig, ax = pyplot.subplots()
-ax.plot(x_axis, results['validation_0']['mlogloss'], label='Train')
-ax.plot(x_axis, results['validation_1']['mlogloss'], label='Validation')
-ax.legend()
-pyplot.ylabel('Log Loss')
-pyplot.title('XGBoost Log Loss')
-pyplot.show()
+# fig, ax = plt.subplots(1, 1, dpi=300)
+# fig.set_size_inches(8,5)
+
+# ax.plot(x_axis, results['validation_0']['mlogloss'], label='Train')
+# ax.plot(x_axis, results['validation_1']['mlogloss'], label='Validation')
+# ax.legend()
+# pyplot.ylabel('Log Loss')
+# pyplot.title('XGBoost Log Loss')
+# pyplot.show()
 # plot classification error
-fig, ax = pyplot.subplots()
+fig, ax = plt.subplots(1, 1, dpi=300)
+fig.set_size_inches(8,5)
 ax.plot(x_axis, results['validation_0']['merror'], label='Train')
 ax.plot(x_axis, results['validation_1']['merror'], label='Validation')
 ax.legend()
