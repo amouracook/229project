@@ -14,10 +14,10 @@ from collections import Counter
 from sklearn import preprocessing, metrics, model_selection
 from sklearn.linear_model import RidgeClassifier
 from sklearn.metrics import balanced_accuracy_score, accuracy_score, f1_score, confusion_matrix
-# from xgboost import XGBClassifier
+from xgboost import XGBClassifier
 import matplotlib.pylab as plt
 from matplotlib import pyplot
-# from xgboost import plot_importance, plot_tree
+from xgboost import plot_importance, plot_tree
 
 
 

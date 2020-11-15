@@ -19,13 +19,13 @@ from collections import Counter
 # Load the dataset
 
 # 
-# df1 = pd.read_csv('SF_41860_Flat.csv', index_col=0)
-df2 = pd.read_csv('SJ_41940_Flat.csv', index_col=0)
-df3 = pd.read_csv('CA_41860_31080_Flat.csv', index_col=0)
+df1 = pd.read_csv('SF_41860_Flat.csv', index_col=0)
+# df2 = pd.read_csv('SJ_41940_Flat.csv', index_col=0)
+# df3 = pd.read_csv('CA_41860_31080_Flat.csv', index_col=0)
 
 # df = pd.concat([df1,df2], ignore_index=True)
-df = pd.concat([df2,df3], ignore_index=True)
-# df = df1
+# df = pd.concat([df2,df3], ignore_index=True)
+df = df1
 
 
 
@@ -159,12 +159,12 @@ y = df['DPEVLOC']
 X_train, X_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.2, random_state=0)
 X_train, X_val, y_train, y_val = model_selection.train_test_split(X_train, y_train, test_size=0.25, random_state=0)
 
-smote = os.SMOTENC(categorical_features = X_encode.astype('bool'),  
-                    sampling_strategy='not majority',
-                    random_state=0)
-# smote = os.SMOTE(sampling_strategy='not majority')
+# smote = os.SMOTENC(categorical_features = X_encode.astype('bool'),  
+#                     sampling_strategy='not majority',
+#                     random_state=0)
+## smote = os.SMOTE(sampling_strategy='not majority')
 
-X_train, y_train = smote.fit_sample(X_train, y_train)
+# X_train, y_train = smote.fit_sample(X_train, y_train)
 
 X = pd.concat([X_train, X_val, X_test], ignore_index= True)
 y = pd.concat([y_train, y_val, y_test], ignore_index= True)
@@ -338,7 +338,7 @@ class DisasterPreparednessModel(nn.Module):
         self.bn1 = nn.BatchNorm1d(self.n_cont) # n_cont = number of cont. features
         self.bn2 = nn.BatchNorm1d(D2)
         # self.bn3 = nn.BatchNorm1d(D3)
-        self.emb_drop = nn.Dropout(0.5) # experiment with dropout probability
+        self.emb_drop = nn.Dropout(0.1) # experiment with dropout probability
         self.drops = nn.Dropout(0.5)
         
         # self.emb_drop = nn.Dropout(0.6) # experiment with dropout probability
@@ -385,8 +385,8 @@ def train_model(model, optim, train_dl, LL):
     for x1, x2, y in train_dl:
         batch = y.shape[0] # size of batch
         output = model(x1, x2) # forward pass
-        # loss = LL(torch.mul(output,torch.tensor(w).float()),y) # Option 1
-        loss = LL(output,y) # Option 2
+        loss = LL(torch.mul(output,torch.tensor(w).float()),y) # Option 1
+        # loss = LL(output,y) # Option 2
         optim.zero_grad() #don't accumulate gradients in the optimizer object
         loss.backward() # calculate gradient (backward pass)
         optim.step() # take gradient descent step
@@ -405,8 +405,8 @@ def val_loss(model, valid_dl, LL):
     for x1, x2, y in valid_dl:
         current_batch_size = y.shape[0]
         out = model(x1, x2)
-        # loss = LL(torch.mul(out,torch.tensor(w).float()),y) # Option 1
-        loss = LL(out,y) # Option 2
+        loss = LL(torch.mul(out,torch.tensor(w).float()),y) # Option 1
+        # loss = LL(out,y) # Option 2
         sum_loss += current_batch_size*(loss.item())
         total += current_batch_size
         pred = torch.max(out, 1)[1]
@@ -420,9 +420,9 @@ def val_loss(model, valid_dl, LL):
 def train_loop(model, epochs, lr=0.01, wd=0.0):
     optim = get_optimizer(model, lr = lr, wd = wd)
     for i in range(epochs): 
-        loss = train_model(model, optim, train_dl,LL)
+        loss = train_model(model, optim, train_dl, LL)
         # print("training loss: ", loss)
-        val_loss(model, valid_dl,LL)
+        val_loss(model, valid_dl, LL)
         
 
 def predict(outs,w):
@@ -438,7 +438,7 @@ model = DisasterPreparednessModel(embedding_sizes, X.shape[1]-len(embedded_cols)
 to_device(model, device)
 
 # Do we want to batch it?
-batch_size = 64
+batch_size = 32
 train_dl = DataLoader(train_ds, batch_size=batch_size, shuffle=True)
 valid_dl = DataLoader(valid_ds, batch_size=batch_size, shuffle=True)
 
@@ -456,13 +456,13 @@ w = (1-beta) / np.array(effective_n)
 # w = np.sqrt(sum(n)/n)
 # w = np.sqrt(n/sum(n))
 
-# LL = nn.NLLLoss(reduction = 'sum') # Option 1
-LL = nn.NLLLoss(weight = torch.tensor(w).float(), reduction = 'sum') # Option 2
+LL = nn.NLLLoss(reduction = 'sum') # Option 1
+# LL = nn.NLLLoss(weight = torch.tensor(w).float(), reduction = 'sum') # Option 2
 
 #%%
 # train_dl = DeviceDataLoader(train_dl, device)
 # valid_dl = DeviceDataLoader(valid_dl, device)
-train_loop(model, epochs=2000, lr=1e-6, wd=0)
+train_loop(model, epochs=2000, lr=1e-6, wd=1e-1)
 
 
 #%% Accuracy
