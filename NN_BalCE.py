@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sun Nov 15 11:45:43 2020
+Created on Sun Nov 15 12:10:15 2020
 
 @author: Davyd, Ana, Aaron
 """
@@ -16,6 +16,7 @@ import torch.optim as torch_optim
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import models
+import kornia as kr
 torch.manual_seed(1)
 np.random.seed(0)
 
@@ -133,14 +134,14 @@ def get_optimizer(model, lr = 0.001, wd = 0.0):
     return optim
 
 # Training function
-def train_model(model, optim, train_dl, w):
+def train_model(model, optim, train_dl, LL, w):
     model.train()
     total = 0
     sum_loss = 0
     for x1, x2, y in train_dl:
         batch = y.shape[0] # size of batch
         output = model(x1, x2) # forward pass
-        loss = F.cross_entropy(output, y, weight=torch.tensor(w).float())
+        loss = LL(torch.mul(output,torch.tensor(w).float()),y)
         optim.zero_grad() #don't accumulate gradients in the optimizer object
         loss.backward() # calculate gradient (backward pass)
         optim.step() # take gradient descent step
@@ -149,7 +150,7 @@ def train_model(model, optim, train_dl, w):
     return sum_loss/total
 
 # Evaluation function
-def val_loss(model, valid_dl, w):
+def val_loss(model, valid_dl, LL, w):
     model.eval()
     total = 0
     sum_loss = 0
@@ -159,7 +160,7 @@ def val_loss(model, valid_dl, w):
     for x1, x2, y in valid_dl:
         current_batch_size = y.shape[0]
         out = model(x1, x2)
-        loss = F.cross_entropy(out, y, weight=torch.tensor(w).float())
+        loss = LL(torch.mul(out,torch.tensor(w).float()),y)
         sum_loss += current_batch_size*(loss.item())
         total += current_batch_size
         pred = torch.max(out, 1)[1]
@@ -171,12 +172,12 @@ def val_loss(model, valid_dl, w):
     
     return sum_loss/total, correct/total
 
-def train_loop(model, w, epochs, lr=0.01, wd=0.0):
+def train_loop(model, LL, w, epochs, lr=0.01, wd=0.0):
     optim = get_optimizer(model, lr = lr, wd = wd)
     for i in range(epochs): 
-        loss = train_model(model, optim, train_dl, w)
+        loss = train_model(model, optim, train_dl, LL, w)
         # print("training loss: ", loss)
-        val_loss(model, valid_dl, w)
+        val_loss(model, valid_dl, LL, w)
 
 def predict(outs,w):
     if type(w).__module__ == np.__name__:
@@ -186,7 +187,7 @@ def predict(outs,w):
     preds = [torch.argmax(item).item() for sublist in weights for item in sublist]
     return preds
         
-#%% Model
+#%% Training #%% Model & training set-up
 
 batch_size = 32
 
@@ -195,16 +196,19 @@ to_device(model, device)
 train_dl = DataLoader(train_ds, batch_size=batch_size, shuffle=True)
 valid_dl = DataLoader(valid_ds, batch_size=batch_size, shuffle=True)
 
-#%% Train
+#%%
 
-# Weights
-w= [1 - n / sum(n)]
+# Weights (CBL Approach)
+beta = .8 # hyperparameter 
+effective_n = 1 - np.power(beta,n)
+w = (1-beta) / np.array(effective_n)
 
-train_loop(model, w, epochs=500, lr=1e-5, wd=1e-1)
+# Loss Function
+bal = nn.NLLLoss(reduction = 'sum')
 
+train_loop(model, bal, w, epochs=500, lr=1e-5, wd=1e-1)
 
-#%% Validation accuracy
-
+#%%
 test_ds = DisasterPreparednessDataset(X_val, y_val, embedded_col_names)
 test_dl = DataLoader(test_ds, batch_size=batch_size)
 
@@ -222,18 +226,10 @@ print(confusion_matrix(y_val, y_pred))
 
 #%% Threshold modification by weights
 
-# n = Counter(df['DPEVLOC'])
-# n = np.asarray([n[f"'{i}'"] for i in range(1,4)])
-# w = sum(n)/n
-# w /= np.linalg.norm(w)
-
-w = np.array([0.3,0.1,0.6])
 y_pred_adj = predict(outs,w)
 print(balanced_accuracy_score(y_val, y_pred_adj))
 print(accuracy_score(y_val, y_pred_adj))
 print(confusion_matrix(y_val, y_pred_adj))   
-
-
 
 #%% Test output
 model.eval()
@@ -251,3 +247,5 @@ y_pred = [torch.argmax(item).item() for sublist in preds for item in sublist]
 print(balanced_accuracy_score(y_test, y_pred))
 print(accuracy_score(y_test, y_pred))
 print(confusion_matrix(y_test, y_pred))
+
+

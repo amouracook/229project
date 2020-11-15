@@ -186,22 +186,22 @@ def predict(outs,w):
     preds = [torch.argmax(item).item() for sublist in weights for item in sublist]
     return preds
         
-#%% Training #%% Model & training set-up
+#%% Model
+
+batch_size = 32
+
 model = DisasterPreparednessModel(embedding_sizes, X.shape[1]-len(embedded_cols))
 to_device(model, device)
-
-# Do we want to batch it?
-batch_size = 32
 train_dl = DataLoader(train_ds, batch_size=batch_size, shuffle=True)
 valid_dl = DataLoader(valid_ds, batch_size=batch_size, shuffle=True)
 
-#%%
-# train_dl = DeviceDataLoader(train_dl, device)
-# valid_dl = DeviceDataLoader(valid_dl, device)
+#%% Train
+
 train_loop(model, epochs=500, lr=1e-5, wd=1e-1)
 
 
-#%%
+#%% Validation accuracy
+
 test_ds = DisasterPreparednessDataset(X_val, y_val, embedded_col_names)
 test_dl = DataLoader(test_ds, batch_size=batch_size)
 
@@ -229,7 +229,6 @@ y_pred_adj = predict(outs,w)
 print(balanced_accuracy_score(y_val, y_pred_adj))
 print(accuracy_score(y_val, y_pred_adj))
 print(confusion_matrix(y_val, y_pred_adj))   
-
 
 
 #%% Test output
