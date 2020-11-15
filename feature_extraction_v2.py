@@ -14,17 +14,15 @@ from collections import Counter
 from sklearn import preprocessing, metrics, model_selection
 from sklearn.linear_model import RidgeClassifier
 from sklearn.metrics import balanced_accuracy_score, accuracy_score, f1_score, confusion_matrix
-from xgboost import XGBClassifier
+# from xgboost import XGBClassifier
 import matplotlib.pylab as plt
 from matplotlib import pyplot
-from xgboost import plot_importance, plot_tree
+# from xgboost import plot_importance, plot_tree
 
 
 
 # Load the dataset
 df = pd.read_csv('SF_41860_Flat.csv', index_col=0)
-# df = pd.read_csv('CA_41860_31080_Flat.csv', index_col=0)
-# CA_41860_31080_Flat
 
 #%% Variable Lists
 
@@ -105,16 +103,15 @@ x_vars_encode = np.asarray([code for code_list in [type_admin, type_occ, type_st
 
 #%% Data Cleaning and Filtering
 
+# Count the number of responses of each kind to DPEVLOC (1-5, -6 or -9)
+# M or -9: Not reported
+# N or -6: Not applicable
 n = Counter(df['DPEVLOC'])
 
 # Number of valid features
 # s = sum([n[f"'{i}'"] for i in range(1,4)])
 
-# M or -9: Not reported
-# N or -6: Not applicable
-
-# Filter by valid output only (rows)
-# df = df.loc[df['DPEVLOC'].isin(["'{}'".format(i) for i in range(1,6)])]
+# Filter by valid output only (rows) -- keep just responses 1, 2, and 3
 df = df.loc[df['DPEVLOC'].isin(["'{}'".format(i) for i in range(1,4)])]
 
 # **NOT REQUIRED IF ENCODING OF MISSING VALUES IS USED**
@@ -153,6 +150,7 @@ y = df['DPEVLOC']
 X_train, X_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.2, random_state=0)
 X_train, X_val, y_train, y_val = model_selection.train_test_split(X_train, y_train, test_size=0.25, random_state=0)
 
+# Use SMOTE for continuous features to oversample the non-majority classes
 smote = os.SMOTENC(categorical_features = X_encode.astype('bool'),  
                     sampling_strategy='not majority',
                     random_state=0)
@@ -160,9 +158,11 @@ smote = os.SMOTENC(categorical_features = X_encode.astype('bool'),
 
 X_train, y_train = smote.fit_sample(X_train, y_train)
 
+# Concatenate all three sets into master X and y dataframes
 X = pd.concat([X_train, X_val, X_test], ignore_index= True)
 y = pd.concat([y_train, y_val, y_test], ignore_index= True)
 
+# Indices to separate out the three sets
 train_sep = X_train.shape[0]
 val_sep = train_sep + X_val.shape[0]
 test_sep = val_sep + X_test.shape[0]
@@ -181,6 +181,7 @@ for i, val in enumerate(X_encode):
     col = valid_vars[i]
     Xi = X.loc[:,col]
     if val == 1:
+        
         # Option #1: encode categorical variables as One Hot encoder
         # OneHot = pd.get_dummies(Xi, prefix=col)
         # if OneHot.shape[1] <= 20:
@@ -210,7 +211,7 @@ for i, val in enumerate(X_encode):
             valid_vars = np.append(valid_vars, [col + '_MISSING'])
             X_encode = np.append(X_encode, val)
 
-
+# After encoding, split back into train, val, and test sets
 X_train, y_train = X[0:train_sep], y[0:train_sep]
 X_val, y_val = X[train_sep:val_sep], y[train_sep:val_sep]
 X_test, y_test = X[val_sep:test_sep], y[val_sep:test_sep]    
@@ -226,7 +227,7 @@ print(clf.score(X_val, y_val))
 print(balanced_accuracy_score(y_val, clf.predict(X_val)))
 print(confusion_matrix(y_val , clf.predict(X_val)))
 
-#%%
+#%% Save the data frames
 # np.save('X_train', X_train)
 # np.save('X_val', X_val)
 # np.save('X_test', X_test)
