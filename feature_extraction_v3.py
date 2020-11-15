@@ -15,10 +15,19 @@ from sklearn.metrics import confusion_matrix
 from imblearn import over_sampling as os
 from sklearn import preprocessing, metrics, model_selection
 from collections import Counter
+import kornia as kr
 
 # Load the dataset
-df = pd.read_csv('SF_41860_Flat.csv', index_col=0)
-# df = pd.read_csv('CA_41860_31080_Flat.csv', index_col=0)
+
+# 
+df1 = pd.read_csv('SF_41860_Flat.csv', index_col=0)
+df2 = pd.read_csv('SJ_41940_Flat.csv', index_col=0)
+df3 = pd.read_csv('CA_41860_31080_Flat.csv', index_col=0)
+
+# df = pd.concat([df1,df2], ignore_index=True)
+# df = pd.concat([df2,df3], ignore_index=True)
+df = df1
+
 
 
 #%% Variable Lists
@@ -103,8 +112,10 @@ x_vars_encode = np.asarray([code for code_list in [type_admin, type_occ, type_st
 n = Counter(df['DPEVLOC'])
 
 # Number of valid features
+# n = np.asarray([n[f"'{i}'"] for i in range(1,6)])
 n = np.asarray([n[f"'{i}'"] for i in range(1,4)])
-w = np.sqrt(sum(n)/n)
+w= [1 - n / sum(n)]
+
 
 # M or -9: Not reported
 # N or -6: Not applicable
@@ -311,16 +322,15 @@ class DisasterPreparednessModel(nn.Module):
         n_emb = sum(e.embedding_dim for e in self.embeddings) #length of all embeddings combined
         self.n_emb, self.n_cont = n_emb, n_cont
         D1 = self.n_emb + self.n_cont
-        D2 = 10*2*(self.n_emb + self.n_cont)//3 + 3
-        # D2 = 50 #int(np.sqrt((self.n_emb + self.n_cont)*3))
-        # D3 = 4*(self.n_emb + self.n_cont)//12
-        D4 = 3
+        D2 = 2*(self.n_emb + self.n_cont)//3 + 3
+        D3 = 3
+        # D4 = 3
         self.lin1 = nn.Linear(D1, D2) #just CS things
-        # self.lin2 = nn.Linear(D2, D3)
-        self.lin3 = nn.Linear(D2, D4)
-        self.bn1 = nn.BatchNorm1d(self.n_cont) #n_cont = number of cont. features
-        # self.bn2 = nn.BatchNorm1d(D2)
-        self.bn3 = nn.BatchNorm1d(D2)
+        self.lin2 = nn.Linear(D2, D3)
+        # self.lin3 = nn.Linear(D2, D2)
+        # self.lin4 = nn.Linear(D2, D4)
+        self.bn1 = nn.BatchNorm1d(self.n_cont) # n_cont = number of cont. features
+        self.bn2 = nn.BatchNorm1d(D2)
         self.emb_drop = nn.Dropout(0.1) # experiment with dropout probability
         self.drops = nn.Dropout(0.5)
         
@@ -330,7 +340,8 @@ class DisasterPreparednessModel(nn.Module):
         # self.lin3 = nn.Linear(70, 5)
         # self.drops = nn.Dropout(0.3)
         # self.softmax = nn.Softmax(dim=1) # we added this
-        
+        # self.lin3 = nn.Linear(D2, D4)
+        # self.bn3 = nn.BatchNorm1d(D2)
 
     def forward(self, x_cat, x_cont):
         x = [e(x_cat[:,i]) for i,e in enumerate(self.embeddings)]
@@ -339,13 +350,15 @@ class DisasterPreparednessModel(nn.Module):
         x2 = self.bn1(x_cont)
         x = torch.cat([x, x2], 1)
         x = F.relu(self.lin1(x))
-        # x = self.drops(x)
-        # x = self.bn2(x)
-        # x = F.relu(self.lin2(x))
         x = self.drops(x)
-        x = self.bn3(x)
-        x = self.lin3(x)
-        # x = self.softmax(x) # we added this
+        x = self.bn2(x)
+        x = self.lin2(x)
+        # x = F.relu(self.lin2(x))
+        # x = self.drops(x)
+        # x = F.relu(self.lin3(x))
+        # x = self.drops(x)
+        # x = self.lin4(x)
+        
         return x
 
 #%% More function definition
@@ -366,6 +379,8 @@ def train_model(model, optim, train_dl):
         output = model(x1, x2) # forward pass
         loss = F.cross_entropy(output, y)
         # loss = F.cross_entropy(output, y, weight=torch.tensor(w).float())
+        # focal = kr.losses.FocalLoss(alpha=alpha, gamma=gamma, reduction='mean')
+        # loss = focal(out,y)
         optim.zero_grad() #don't accumulate gradients in the optimizer object
         loss.backward() # calculate gradient (backward pass)
         optim.step() # take gradient descent step
@@ -386,6 +401,8 @@ def val_loss(model, valid_dl):
         out = model(x1, x2)
         loss = F.cross_entropy(out, y)
         # loss = F.cross_entropy(out, y, weight=torch.tensor(w).float())
+        # focal = kr.losses.FocalLoss(alpha=alpha, gamma=gamma, reduction='mean')
+        # loss = focal(out,y)
         sum_loss += current_batch_size*(loss.item())
         total += current_batch_size
         pred = torch.max(out, 1)[1]
@@ -403,6 +420,15 @@ def train_loop(model, epochs, lr=0.01, wd=0.0):
         # print("training loss: ", loss)
         val_loss(model, valid_dl)
         
+
+def predict(outs,w):
+    if type(w).__module__ == np.__name__:
+        # if w is a numpy array convert to tensor
+        w = torch.from_numpy(w)
+    weights = [torch.mul(outs[batch],w) for batch in range(len(outs))]
+    preds = [torch.argmax(item).item() for sublist in weights for item in sublist]
+    return preds
+        
 #%% Training #%% Model & training set-up
 model = DisasterPreparednessModel(embedding_sizes, X.shape[1]-len(embedded_cols))
 to_device(model, device)
@@ -415,24 +441,38 @@ valid_dl = DataLoader(valid_ds, batch_size=batch_size, shuffle=True)
 #%%
 # train_dl = DeviceDataLoader(train_dl, device)
 # valid_dl = DeviceDataLoader(valid_dl, device)
-train_loop(model, epochs=200, lr=2e-5, wd=1e-1)
+train_loop(model, epochs=500, lr=1e-5, wd=1e-1)
 
 
 #%%
 test_ds = DisasterPreparednessDataset(X_val, y_val, embedded_col_names)
 test_dl = DataLoader(test_ds, batch_size=batch_size)
 
-preds = []
+outs = []
 with torch.no_grad():
     for x1,x2,y in test_dl:
         out = model(x1, x2)
         prob = F.softmax(out, dim=1)
-        preds.append(prob)
+        outs.append(prob)
 
-y_pred = [torch.argmax(item).item() for sublist in preds for item in sublist]     
+y_pred = [torch.argmax(item).item() for sublist in outs for item in sublist]          
 print(balanced_accuracy_score(y_val, y_pred))
 print(accuracy_score(y_val, y_pred))
 print(confusion_matrix(y_val, y_pred))
+
+#%%
+# Weight adjustment vector
+# n = Counter(df['DPEVLOC'])
+# n = np.asarray([n[f"'{i}'"] for i in range(1,4)])
+# w = sum(n)/n
+# w /= np.linalg.norm(w)
+w = np.array([0.3,0.1,0.6])
+y_pred_adj = predict(outs,w)
+print(balanced_accuracy_score(y_val, y_pred_adj))
+print(accuracy_score(y_val, y_pred_adj))
+print(confusion_matrix(y_val, y_pred_adj))   
+
+
 
 #%% Test output
 # model.eval()
