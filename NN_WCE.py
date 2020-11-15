@@ -22,7 +22,7 @@ np.random.seed(0)
 # dataset: 0 = SF data only, 1 = SF + LA data, 2 = SF + SJ data, 3 = All of CA
 
 X, X_encode, X_train, y_train, X_val, y_val, X_test, y_test, n = \
-    feature_extraction(dataset = 0, onehot_option = False, smote_option = True)
+    feature_extraction(dataset = 0, onehot_option = False, smote_option = False)
     
     
 #%% Categorical embedding for categorical columns having more than two values
@@ -200,7 +200,7 @@ valid_dl = DataLoader(valid_ds, batch_size=batch_size, shuffle=True)
 # Weights
 w= [1 - n / sum(n)]
 
-train_loop(model, w, epochs=500, lr=1e-5, wd=1e-1)
+train_loop(model, w, epochs=500, lr=1e-5, wd=1)
 
 
 #%% Validation accuracy

@@ -107,7 +107,7 @@ class DisasterPreparednessModel(nn.Module):
         self.lin2 = nn.Linear(D2, D3)
         self.bn1 = nn.BatchNorm1d(self.n_cont) # n_cont = number of cont. features
         self.bn2 = nn.BatchNorm1d(D2)
-        self.emb_drop = nn.Dropout(0.1) # dropout probability for features
+        self.emb_drop = nn.Dropout(0.2) # dropout probability for features
         self.drops = nn.Dropout(0.5) # dropout probability for hidden layers
 
 
