@@ -15,6 +15,7 @@ from sklearn.metrics import confusion_matrix
 from imblearn import over_sampling as os
 from sklearn import preprocessing, metrics, model_selection
 from collections import Counter
+import kornia as kr
 
 # Load the dataset
 
@@ -113,7 +114,8 @@ n = Counter(df['DPEVLOC'])
 # Number of valid features
 # n = np.asarray([n[f"'{i}'"] for i in range(1,6)])
 n = np.asarray([n[f"'{i}'"] for i in range(1,4)])
-w = sum(n)/n
+w= [1 - n / sum(n)]
+
 
 # M or -9: Not reported
 # N or -6: Not applicable
@@ -377,6 +379,8 @@ def train_model(model, optim, train_dl):
         output = model(x1, x2) # forward pass
         loss = F.cross_entropy(output, y)
         # loss = F.cross_entropy(output, y, weight=torch.tensor(w).float())
+        # focal = kr.losses.FocalLoss(alpha=alpha, gamma=gamma, reduction='mean')
+        # loss = focal(out,y)
         optim.zero_grad() #don't accumulate gradients in the optimizer object
         loss.backward() # calculate gradient (backward pass)
         optim.step() # take gradient descent step
@@ -397,6 +401,8 @@ def val_loss(model, valid_dl):
         out = model(x1, x2)
         loss = F.cross_entropy(out, y)
         # loss = F.cross_entropy(out, y, weight=torch.tensor(w).float())
+        # focal = kr.losses.FocalLoss(alpha=alpha, gamma=gamma, reduction='mean')
+        # loss = focal(out,y)
         sum_loss += current_batch_size*(loss.item())
         total += current_batch_size
         pred = torch.max(out, 1)[1]
