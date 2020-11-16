@@ -17,7 +17,7 @@ from sklearn.metrics import plot_confusion_matrix
 import pandas as pd
 
 #%% Defined multiclass roc function
-def plot_multiclass_roc(clf, X_test, y_test, n_classes, figsize=(12,4), flag=False):
+def plot_multiclass_roc(clf, X_test, y_test, n_classes, title, figsize=(12,4), flag=False):
     if flag: y_score = clf.predict_proba(X_test)
     else: y_score = clf.decision_function(X_test)
     
@@ -59,6 +59,7 @@ def plot_multiclass_roc(clf, X_test, y_test, n_classes, figsize=(12,4), flag=Fal
                                  normalize='true')
     fig.tight_layout()
     plt.show()
+    fig.savefig(f'{title}.png', dpi=300)
     
 #%% Load dataset
 # dataset: 0 = SF data only, 1 = SF + LA data, 2 = SF + SJ data, 3 = All of CA
@@ -73,11 +74,20 @@ from sklearn.linear_model import RidgeClassifier
 ridge = RidgeClassifier(class_weight='balanced')
 ridge.fit(X_train, y_train)
 
+# Validation
 print(ridge.score(X_val, y_val))
 print(balanced_accuracy_score(y_val, ridge.predict(X_val)))
+print(f1_score(y_val, ridge.predict(X_val), average='macro'))
 print(confusion_matrix(y_val , ridge.predict(X_val)))
 
-plot_multiclass_roc(ridge, X_test, y_test, n_classes=3, flag=False)
+# Test
+print(ridge.score(X_test, y_test))
+print(balanced_accuracy_score(y_test, ridge.predict(X_test)))
+print(f1_score(y_test, ridge.predict(X_test), average='macro'))
+print(confusion_matrix(y_test , ridge.predict(X_test)))
+
+
+plot_multiclass_roc(ridge, X_test, y_test, title='ROCRidge', n_classes=3, flag=False)
 
 #%% XGBoost
 from xgboost import XGBClassifier
@@ -95,13 +105,23 @@ xgb.fit(X_train, y_train, eval_metric=['merror', 'mlogloss'],
           eval_set=[(X_train, y_train), (X_val, y_val)], 
           verbose=False)
 
+# Validation
 y_pred = xgb.predict(X_val)
-
 print(accuracy_score(y_val, y_pred))
 print(balanced_accuracy_score(y_val, y_pred))
+print(f1_score(y_val, y_pred, average='macro'))
 print(confusion_matrix(y_val, y_pred))
 
-plot_multiclass_roc(xgb, X_test, y_test, n_classes=3, flag=True)
+
+# Test
+y_pred = xgb.predict(X_test)
+print(accuracy_score(y_test, y_pred))
+print(balanced_accuracy_score(y_test, ridge.predict(X_test)))
+print(f1_score(y_test, y_pred, average='macro'))
+print(confusion_matrix(y_test , ridge.predict(X_test)))
+
+
+plot_multiclass_roc(xgb, X_test, y_test, title='ROCXGBoost', n_classes=3, flag=True)
 
 #%% Importance graph
 fig, ax = plt.subplots(1, 1, dpi=300)
@@ -117,7 +137,7 @@ ax.grid(b=True, which='minor', axis='x', color='gray', linestyle='-', linewidth=
 
 fig.tight_layout()
 
-# plt.savefig('xgboost_feature_importance.png', dpi=300)
+plt.savefig('xgboost_feature_importance.png', dpi=300)
 
 plt.show()
 
@@ -152,13 +172,22 @@ rf = RandomForestClassifier(max_depth=3,
 
 rf.fit(X_train, y_train)
 
+# Validation
 y_pred = rf.predict(X_val)
-
 print(accuracy_score(y_val, y_pred))
 print(balanced_accuracy_score(y_val, y_pred))
+print(f1_score(y_val, y_pred, average='macro'))
 print(confusion_matrix(y_val, y_pred))
 
-plot_multiclass_roc(rf, X_test, y_test, n_classes=3, flag=True)
+
+# Test
+y_pred = xgb.predict(X_test)
+print(accuracy_score(y_test, y_pred))
+print(balanced_accuracy_score(y_test, ridge.predict(X_test)))
+print(f1_score(y_test, y_pred, average='macro'))
+print(confusion_matrix(y_test , ridge.predict(X_test)))
+
+plot_multiclass_roc(rf, X_test, y_test, title='ROCRandomForest',n_classes=3, flag=True)
 
 #%%
 from sklearn.linear_model import LogisticRegression
@@ -167,12 +196,22 @@ logreg = LogisticRegression(random_state=0,
                            multi_class='multinomial', 
                            penalty='l2', max_iter=10000)
 logreg.fit(X_train, y_train)
-y_pred = logreg.predict(X_val)
 
+# Validation
+y_pred = logreg.predict(X_val)
 print(accuracy_score(y_val, y_pred))
 print(balanced_accuracy_score(y_val, y_pred))
+print(f1_score(y_val, y_pred, average='macro'))
 print(confusion_matrix(y_val, y_pred))
 
-plot_multiclass_roc(logreg, X_test, y_test, n_classes=3,  flag=False)
+
+# Test
+y_pred = xgb.predict(X_test)
+print(accuracy_score(y_test, y_pred))
+print(balanced_accuracy_score(y_test, ridge.predict(X_test)))
+print(f1_score(y_test, y_pred, average='macro'))
+print(confusion_matrix(y_test , ridge.predict(X_test)))
+
+plot_multiclass_roc(logreg, X_test, y_test, title='ROCLogReg', n_classes=3,  flag=False)
 
 
