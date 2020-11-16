@@ -116,7 +116,7 @@ print(confusion_matrix(y_val, y_pred))
 # Test
 y_pred = xgb.predict(X_test)
 print(accuracy_score(y_test, y_pred))
-print(balanced_accuracy_score(y_test, ridge.predict(X_test)))
+print(balanced_accuracy_score(y_test, y_pred))
 print(f1_score(y_test, y_pred, average='macro'))
 print(confusion_matrix(y_test , ridge.predict(X_test)))
 
@@ -181,9 +181,9 @@ print(confusion_matrix(y_val, y_pred))
 
 
 # Test
-y_pred = xgb.predict(X_test)
+y_pred = rf.predict(X_test)
 print(accuracy_score(y_test, y_pred))
-print(balanced_accuracy_score(y_test, ridge.predict(X_test)))
+print(balanced_accuracy_score(y_test, y_pred))
 print(f1_score(y_test, y_pred, average='macro'))
 print(confusion_matrix(y_test , ridge.predict(X_test)))
 
@@ -206,9 +206,9 @@ print(confusion_matrix(y_val, y_pred))
 
 
 # Test
-y_pred = xgb.predict(X_test)
+y_pred = logreg.predict(X_test)
 print(accuracy_score(y_test, y_pred))
-print(balanced_accuracy_score(y_test, ridge.predict(X_test)))
+print(balanced_accuracy_score(y_test, y_pred))
 print(f1_score(y_test, y_pred, average='macro'))
 print(confusion_matrix(y_test , ridge.predict(X_test)))
 
