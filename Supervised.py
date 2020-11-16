@@ -74,6 +74,7 @@ from sklearn.linear_model import RidgeClassifier
 ridge = RidgeClassifier(class_weight='balanced')
 ridge.fit(X_train, y_train)
 
+print('RIDGE REGRESSION')
 # Validation
 print(ridge.score(X_val, y_val))
 print(balanced_accuracy_score(y_val, ridge.predict(X_val)))
@@ -105,6 +106,7 @@ xgb.fit(X_train, y_train, eval_metric=['merror', 'mlogloss'],
           eval_set=[(X_train, y_train), (X_val, y_val)], 
           verbose=False)
 
+print('XGB')
 # Validation
 y_pred = xgb.predict(X_val)
 print(accuracy_score(y_val, y_pred))
@@ -118,7 +120,7 @@ y_pred = xgb.predict(X_test)
 print(accuracy_score(y_test, y_pred))
 print(balanced_accuracy_score(y_test, y_pred))
 print(f1_score(y_test, y_pred, average='macro'))
-print(confusion_matrix(y_test , ridge.predict(X_test)))
+print(confusion_matrix(y_test , y_pred))
 
 
 plot_multiclass_roc(xgb, X_test, y_test, title='ROCXGBoost', n_classes=3, flag=True)
@@ -172,6 +174,8 @@ rf = RandomForestClassifier(max_depth=3,
 
 rf.fit(X_train, y_train)
 
+
+print('RF')
 # Validation
 y_pred = rf.predict(X_val)
 print(accuracy_score(y_val, y_pred))
@@ -196,6 +200,8 @@ logreg = LogisticRegression(random_state=0,
                            multi_class='multinomial', 
                            penalty='l2', max_iter=10000)
 logreg.fit(X_train, y_train)
+
+print('LOGREG')
 
 # Validation
 y_pred = logreg.predict(X_val)
