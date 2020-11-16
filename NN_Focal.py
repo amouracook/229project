@@ -19,19 +19,19 @@ from torchvision import models
 import kornia as kr
 from scipy.optimize import minimize
 
-torch.manual_seed(2)
+torch.manual_seed(1)
 # np.random.seed(0)
 
 # dataset: 0 = SF data only, 1 = SF + LA data, 2 = SF + SJ data, 3 = All of CA
 
 X, X_encode, X_train, y_train, X_val, y_val, X_test, y_test, n = \
-    feature_extraction(dataset = 0, onehot_option = False, smote_option = False, y_stratify=True, seed=0)
+    feature_extraction(dataset = 0, onehot_option = True, smote_option = False, y_stratify=True, seed=0)
     
     
 #%% Categorical embedding for categorical columns having more than two values
 
 # Choosing columns for embedding
-embedded_cols = {n: len(col.cat.categories) for n,col in X.loc[:,X_encode==1].items() if len(col.cat.categories) > 2}
+embedded_cols = {n: len(col.cat.categories) for n,col in X.loc[:,X_encode==1].items() if len(np.unique(col)) > 20}
 embedded_col_names = embedded_cols.keys()
 
 # Determinining size of embedding
@@ -112,7 +112,7 @@ class DisasterPreparednessModel(nn.Module):
         self.bn2 = nn.BatchNorm1d(D2)
         self.emb_drop = nn.Dropout(0.2) # dropout probability for features
         self.drops = nn.Dropout(0.5) # dropout probability for hidden layers
-        self.sigmoid = nn.Sigmoid()
+        self.sigmoid = nn.Softmax(dim=1)
 
     def forward(self, x_cat, x_cont):
         x = [e(x_cat[:,i]) for i,e in enumerate(self.embeddings)]
@@ -178,7 +178,7 @@ def train_loop(model, LL, epochs, lr=0.01, wd=0.0):
     optim = get_optimizer(model, lr = lr, wd = wd)
     for i in range(epochs): 
         loss = train_model(model, optim, train_dl, LL)
-        # print("training loss: ", loss)
+        print("training loss: ", loss)
         val_loss(model, valid_dl, LL)
 
 def predict(outs,w):
@@ -208,7 +208,7 @@ alpha = 0.05
 gamma = 3
 focal = kr.losses.FocalLoss(alpha=alpha, gamma=gamma, reduction='mean')
 
-train_loop(model, focal, epochs=100, lr=1e-5, wd=1e-4)
+train_loop(model, focal, epochs=1200, lr=1e-5, wd=1e-4)
 
 #%% Balanced accuracy
 def balanced_accuracy(weights, test_dl, y_eval, model, print_flag=False):

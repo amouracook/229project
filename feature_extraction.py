@@ -182,6 +182,8 @@ def feature_extraction(dataset, onehot_option = False, smote_option = True, y_st
     le.fit(np.unique(y))
     y = le.transform(y)
     
+    X_remove = []
+    
     # Loop through each input variable and encode categorical ones (i.e. X_incode == 1)
     for i, val in enumerate(X_encode):
         col = valid_vars[i]
@@ -193,9 +195,14 @@ def feature_extraction(dataset, onehot_option = False, smote_option = True, y_st
                 OneHot = pd.get_dummies(Xi, prefix=col)
                 if OneHot.shape[1] <= 20:
                     X = pd.concat([X, OneHot], axis=1)
-                    X_encode = np.append(X_encode, np.repeat(val, OneHot.shape[1]))
-                X = X.drop(col, axis=1)
-                X_encode = np.delete(X_encode, i)
+                    X_encode = np.append(X_encode, np.repeat(0, OneHot.shape[1]))
+                    X = X.drop(col, axis=1)
+                    X_remove.append(i)
+                else:
+                    Xi = X.loc[:,col]
+                    le.fit(np.unique(Xi))
+                    X.loc[:,col] = le.transform(Xi)
+                    if as_category: X[col] = X[col].astype('category')
             else:
                 # Encode categorical variables as Label encoder
                 Xi = X.loc[:,col]
@@ -217,7 +224,9 @@ def feature_extraction(dataset, onehot_option = False, smote_option = True, y_st
                 X[col] = X[col].clip(lower=0)
                 valid_vars = np.append(valid_vars, [col + '_MISSING'])
                 X_encode = np.append(X_encode, val)
-    
+                
+    X_encode = np.asarray([i for j, i in enumerate(X_encode) if j not in X_remove])
+
     # After encoding, split back into train, val, and test sets
     X_train, y_train = X[0:train_sep], y[0:train_sep]
     X_val, y_val = X[train_sep:val_sep], y[train_sep:val_sep]
