@@ -9,26 +9,33 @@ Created on Sun Nov 15 11:22:57 2020
 from feature_extraction import feature_extraction
 import numpy as np
 from sklearn.metrics import balanced_accuracy_score, accuracy_score
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, f1_score
 import torch
 from torch.utils.data import Dataset, DataLoader
 import torch.optim as torch_optim
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import models
+from scipy.optimize import minimize
+import matplotlib.pyplot as plt
+import pandas as pd
+from sklearn.metrics import roc_curve, auc
+import seaborn as sns
+
+
 torch.manual_seed(1)
 np.random.seed(0)
 
 # dataset: 0 = SF data only, 1 = SF + LA data, 2 = SF + SJ data, 3 = All of CA
 
-X, X_encode, X_train, y_train, X_val, y_val, X_test, y_test, n = \
-    feature_extraction(dataset = 0, onehot_option = False, smote_option = True)
+X, y, X_encode, X_train, y_train, X_val, y_val, X_test, y_test, n = \
+    feature_extraction(dataset = 0, onehot_option = False, smote_option = True, y_stratify=True)
     
     
 #%% Categorical embedding for categorical columns having more than two values
 
 # Choosing columns for embedding
-embedded_cols = {n: len(col.cat.categories) for n,col in X.loc[:,X_encode==1].items() if len(col.cat.categories) > 2}
+embedded_cols = {n: len(col.cat.categories) for n,col in X.loc[:,X_encode==1].items() if len(col.cat.categories) > 20}
 embedded_col_names = embedded_cols.keys()
 
 # Determinining size of embedding
@@ -107,7 +114,7 @@ class DisasterPreparednessModel(nn.Module):
         self.lin2 = nn.Linear(D2, D3)
         self.bn1 = nn.BatchNorm1d(self.n_cont) # n_cont = number of cont. features
         self.bn2 = nn.BatchNorm1d(D2)
-        self.emb_drop = nn.Dropout(0.2) # dropout probability for features
+        self.emb_drop = nn.Dropout(0.1) # dropout probability for features
         self.drops = nn.Dropout(0.5) # dropout probability for hidden layers
 
 
@@ -175,7 +182,7 @@ def train_loop(model, epochs, lr=0.01, wd=0.0):
     optim = get_optimizer(model, lr = lr, wd = wd)
     for i in range(epochs): 
         loss = train_model(model, optim, train_dl)
-        # print("training loss: ", loss)
+        print("training loss: ", loss)
         val_loss(model, valid_dl)
 
 def predict(outs,w):
@@ -188,7 +195,7 @@ def predict(outs,w):
         
 #%% Model
 
-batch_size = 32
+batch_size = 100
 
 model = DisasterPreparednessModel(embedding_sizes, X.shape[1]-len(embedded_cols))
 to_device(model, device)
@@ -197,42 +204,53 @@ valid_dl = DataLoader(valid_ds, batch_size=batch_size, shuffle=True)
 
 #%% Train
 
-train_loop(model, epochs=500, lr=1e-5, wd=1e-1)
+train_loop(model, epochs=250, lr=1e-4, wd=1e-2)
 
 
 #%% Validation accuracy
 
-test_ds = DisasterPreparednessDataset(X_val, y_val, embedded_col_names)
-test_dl = DataLoader(test_ds, batch_size=batch_size)
+def balanced_accuracy(weights, test_dl, y_eval, model, print_flag=False):
+    preds = []
+    with torch.no_grad():
+        for x1,x2,y in test_dl:
+            out = model(x1, x2)*torch.tensor(weights)
+            # print(prob)
+            preds.append(out)
 
-outs = []
-with torch.no_grad():
-    for x1,x2,y in test_dl:
-        out = model(x1, x2)
-        prob = F.softmax(out, dim=1)
-        outs.append(prob)
+    y_pred = [torch.argmax(item).item() for sublist in preds for item in sublist]  
+    if print_flag: 
+        print(accuracy_score(y_eval, y_pred),balanced_accuracy_score(y_eval, y_pred))
+        print(confusion_matrix(y_eval, y_pred))
+        print(f1_score(y_eval, y_pred, average='weighted'))
+    return -balanced_accuracy_score(y_eval, y_pred)
 
-y_pred = [torch.argmax(item).item() for sublist in outs for item in sublist]          
-print(balanced_accuracy_score(y_val, y_pred))
-print(accuracy_score(y_val, y_pred))
-print(confusion_matrix(y_val, y_pred))
+#%% Train accuracy
+train_ds = DisasterPreparednessDataset(X_train, y_train, embedded_col_names)
+train_dl = DataLoader(train_ds, batch_size=batch_size)
+balanced_accuracy([1,1,1], train_dl, y_train, model, True)
 
-#%% Threshold modification by weights
+#%% Validation accuracy
+val_ds = DisasterPreparednessDataset(X_val, y_val, embedded_col_names)
+val_dl = DataLoader(val_ds, batch_size=batch_size)
 
-# n = Counter(df['DPEVLOC'])
-# n = np.asarray([n[f"'{i}'"] for i in range(1,4)])
-# w = sum(n)/n
-# w /= np.linalg.norm(w)
+balanced_accuracy([1,1,1],  val_dl, y_val, model, True)
 
-w = np.array([0.3,0.1,0.6])
-y_pred_adj = predict(outs,w)
-print(balanced_accuracy_score(y_val, y_pred_adj))
-print(accuracy_score(y_val, y_pred_adj))
-print(confusion_matrix(y_val, y_pred_adj))   
-
+w_opt=minimize(balanced_accuracy, x0=[1,1,1], args=(val_dl, y_val, model), method='Powell')
+balanced_accuracy(w_opt.x, val_dl, y_val, model, True)
 
 #%% Test output
-model.eval()
+test_ds = DisasterPreparednessDataset(X_test, y_test, embedded_col_names)
+test_dl = DataLoader(test_ds, batch_size=batch_size)
+
+balanced_accuracy([1,1,1], test_dl, y_test, model, True)
+balanced_accuracy(w_opt.x, test_dl, y_test, model, True)
+
+
+test_ds = DisasterPreparednessDataset(X_test, y_test, embedded_col_names)
+test_dl = DataLoader(test_ds, batch_size=batch_size)
+
+
+#%%
 test_ds = DisasterPreparednessDataset(X_test, y_test, embedded_col_names)
 test_dl = DataLoader(test_ds, batch_size=batch_size)
 
@@ -240,10 +258,73 @@ preds = []
 with torch.no_grad():
     for x1,x2,y in test_dl:
         out = model(x1, x2)
-        prob = F.softmax(out, dim=1)
-        preds.append(prob)
+        # print(prob)
+        preds.append(out)
 
-y_pred = [torch.argmax(item).item() for sublist in preds for item in sublist]     
-print(balanced_accuracy_score(y_test, y_pred))
-print(accuracy_score(y_test, y_pred))
-print(confusion_matrix(y_test, y_pred))
+
+y_pred = [torch.argmax(item).item() for sublist in preds for item in sublist]  
+
+#%%
+import matplotlib.pyplot as plt
+def plot_multiclass_roc(preds, y_pred, X_test, y_test, n_classes, title, figsize=(5,9.5), flag=False, save=None):
+    y_score = torch.cat(preds,dim=0)
+        
+    colors = ['#433E3F','#7880B5', '#E45C3A']
+    
+    plt.rcParams['font.size'] = '16'
+
+    # structures
+    fpr = dict()
+    tpr = dict()
+    roc_auc = dict()
+
+    # calculate dummies once
+    y_test_dummies = pd.get_dummies(y_test, drop_first=False).values
+    for i in range(n_classes):
+        fpr[i], tpr[i], _ = roc_curve(y_test_dummies[:, i], y_score[:, i])
+        roc_auc[i] = auc(fpr[i], tpr[i])
+
+    # roc for each class
+    fig, (ax, ax2) = plt.subplots(2, 1, figsize=figsize)
+    ax.plot([0, 1], [0, 1], 'k--')
+    ax.set_xlim([0.0, 1.0])
+    ax.set_ylim([0.0, 1.0])
+    ax.set_xlabel('False Positive Rate')
+    ax.set_ylabel('True Positive Rate')
+    ax.set_aspect(1)
+    ax.grid('on')
+    ax.minorticks_on()
+    ax.grid(b=True, which='major', linestyle='-', linewidth=0.5, alpha=0.5, zorder=0)
+    ax.grid(b=True, which='minor',  color='gray', linestyle='-', linewidth=0.25, alpha=0.25, zorder=0)
+
+    ax.set_title(title, fontsize=18, fontweight='bold')
+    titles = ['Relatives / Friends', 'Public Shelter', 'Hotel']
+    for i in range(n_classes):
+        print('ROC curve (area = %0.4f) for label %i' % (roc_auc[i], i))
+        # ax.plot(fpr[i], tpr[i], color=colors[i], label='ROC curve (area = %0.2f) for label %i' % (roc_auc[i], i))
+        ax.plot(fpr[i], tpr[i], color=colors[i], label=f'Class {i+1}', linewidth=3)
+    ax.legend(loc="lower right")
+    
+    np.set_printoptions(precision=2)
+    
+    ax2 = sns.heatmap(confusion_matrix(y_test, y_pred, normalize='true'), annot=True, 
+                      cmap=plt.cm.Blues, vmin=0.0, vmax=1.0, annot_kws={'size':16},
+                      yticklabels=[i+1 for i in range(n_classes)],
+                      xticklabels=[i+1 for i in range(n_classes)])
+
+    for _, spine in ax2.spines.items():
+        spine.set_visible(True)
+        
+    ax2.set_xlabel('Predicted class')
+    ax2.set_ylabel('True class')
+    ax2.set_aspect(1)
+
+    fig.tight_layout()
+    
+    if save: plt.savefig(save, dpi=300)
+    
+    plt.show()
+   
+#%%
+plot_multiclass_roc(preds, y_pred, X_test, y_test, title='Neural Network (CE)', n_classes=3, flag=False, save='NN_CE_roc.png')
+
