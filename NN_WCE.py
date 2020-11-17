@@ -26,7 +26,7 @@ np.random.seed(0)
 
 # dataset: 0 = SF data only, 1 = SF + LA data, 2 = SF + SJ data, 3 = All of CA
 
-X, X_encode, X_train, y_train, X_val, y_val, X_test, y_test, n = \
+X, y, X_encode, X_train, y_train, X_val, y_val, X_test, y_test, n = \
     feature_extraction(dataset = 0, onehot_option = False, smote_option = False)
     
     
@@ -205,7 +205,7 @@ valid_dl = DataLoader(valid_ds, batch_size=batch_size, shuffle=True)
 # Weights
 w= [1 - n / sum(n)]
 
-train_loop(model, w, epochs=50, lr=1e-4, wd=1e-3)
+train_loop(model, w, epochs=250, lr=1e-4, wd=1e-2)
 
 
 #%%
@@ -250,23 +250,28 @@ test_ds = DisasterPreparednessDataset(X_test, y_test, embedded_col_names)
 test_dl = DataLoader(test_ds, batch_size=batch_size)
 
 
-#%% Plot
+#%%
+test_ds = DisasterPreparednessDataset(X_test, y_test, embedded_col_names)
+test_dl = DataLoader(test_ds, batch_size=batch_size)
+
 preds = []
 with torch.no_grad():
     for x1,x2,y in test_dl:
-        out = model(x1, x2)
+        out = model(x1, x2)*w_opt.x
         # print(prob)
         preds.append(out)
 
 
 y_pred = [torch.argmax(item).item() for sublist in preds for item in sublist]  
 
+#%%
+import matplotlib.pyplot as plt
 def plot_multiclass_roc(preds, y_pred, X_test, y_test, n_classes, title, figsize=(5,9.5), flag=False, save=None):
     y_score = torch.cat(preds,dim=0)
         
-    colors = ['#E45C3A', '#F4A261', '#7880B5']
+    colors = ['#433E3F','#7880B5', '#E45C3A']
     
-    plt.rcParams['font.size'] = '14'
+    plt.rcParams['font.size'] = '16'
 
     # structures
     fpr = dict()
@@ -292,34 +297,33 @@ def plot_multiclass_roc(preds, y_pred, X_test, y_test, n_classes, title, figsize
     ax.grid(b=True, which='major', linestyle='-', linewidth=0.5, alpha=0.5, zorder=0)
     ax.grid(b=True, which='minor',  color='gray', linestyle='-', linewidth=0.25, alpha=0.25, zorder=0)
 
-    ax.set_title(title, fontsize=16, fontweight='bold')
+    ax.set_title(title, fontsize=18, fontweight='bold')
     titles = ['Relatives / Friends', 'Public Shelter', 'Hotel']
     for i in range(n_classes):
         print('ROC curve (area = %0.4f) for label %i' % (roc_auc[i], i))
         # ax.plot(fpr[i], tpr[i], color=colors[i], label='ROC curve (area = %0.2f) for label %i' % (roc_auc[i], i))
-        ax.plot(fpr[i], tpr[i], color=colors[i], label=f'Label {i}')
+        ax.plot(fpr[i], tpr[i], color=colors[i], label=f'Class {i+1}', linewidth=3)
     ax.legend(loc="lower right")
     
     np.set_printoptions(precision=2)
     
     ax2 = sns.heatmap(confusion_matrix(y_test, y_pred, normalize='true'), annot=True, 
-                      cmap=plt.cm.Blues, vmin=0.0, vmax=1.0, annot_kws={'size':16})
+                      cmap=plt.cm.Blues, vmin=0.0, vmax=1.0, annot_kws={'size':16},
+                      yticklabels=[i+1 for i in range(n_classes)],
+                      xticklabels=[i+1 for i in range(n_classes)])
 
     for _, spine in ax2.spines.items():
         spine.set_visible(True)
         
-    ax2.set_xlabel('Predicted label')
-    ax2.set_ylabel('True label')
+    ax2.set_xlabel('Predicted class')
+    ax2.set_ylabel('True class')
     ax2.set_aspect(1)
 
     fig.tight_layout()
-
     
     if save: plt.savefig(save, dpi=300)
     
     plt.show()
    
-plot_multiclass_roc(preds, y_pred, X_test, y_test, title='Neural Network', n_classes=3, flag=False, save=False)
-
-
-
+#%%
+plot_multiclass_roc(preds, y_pred, X_test, y_test, title='Neural Network (W. CE)', n_classes=3, flag=False, save='NN_WCE_roc.png')

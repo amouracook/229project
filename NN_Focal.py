@@ -28,7 +28,7 @@ torch.manual_seed(1)
 
 # dataset: 0 = SF data only, 1 = SF + LA data, 2 = SF + SJ data, 3 = All of CA
 
-X, X_encode, X_train, y_train, X_val, y_val, X_test, y_test, n = \
+X, y, X_encode, X_train, y_train, X_val, y_val, X_test, y_test, n = \
     feature_extraction(dataset = 0, onehot_option = True, smote_option = False, y_stratify=True, seed=0)
     
     

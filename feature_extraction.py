@@ -232,4 +232,4 @@ def feature_extraction(dataset, onehot_option = False, smote_option = True, y_st
     X_val, y_val = X[train_sep:val_sep], y[train_sep:val_sep]
     X_test, y_test = X[val_sep:test_sep], y[val_sep:test_sep] 
 
-    return X, X_encode, X_train, y_train, X_val, y_val, X_test, y_test, n
+    return X, y, X_encode, X_train, y_train, X_val, y_val, X_test, y_test, n
