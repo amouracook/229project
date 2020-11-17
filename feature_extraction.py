@@ -193,7 +193,7 @@ def feature_extraction(dataset, onehot_option = False, smote_option = True, y_st
             if onehot_option:
                 # Encode categorical variables as One Hot encoder
                 OneHot = pd.get_dummies(Xi, prefix=col)
-                if OneHot.shape[1] <= 20:
+                if 2 < OneHot.shape[1] <= 20:
                     X = pd.concat([X, OneHot], axis=1)
                     X_encode = np.append(X_encode, np.repeat(0, OneHot.shape[1]))
                     X = X.drop(col, axis=1)
