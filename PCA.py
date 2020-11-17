@@ -41,42 +41,63 @@ labels = ['1: Relatives/Friends','2: Shelter','3: Hotel']
 # Plot transformed data
 from matplotlib.colors import LinearSegmentedColormap
 
-colors = [(0.89, 0.36, 0.23),(0.26, 0.24, 0.25),(0.47, 0.5 , 0.71)]
+# colors = [(0.89, 0.36, 0.23),(0.26, 0.24, 0.25),(0.47, 0.5 , 0.71)]
 mapML = LinearSegmentedColormap.from_list('229', colors, N = 3)
-# colors = ['#E45C3A','#433E3F','#7880B5']
+colors = ['#E45C3A','#433E3F','#7880B5']
 plotcols = [colors[i] for i in y]
-fig,ax = plt.subplots(dpi=300, figsize = (6,4))
-ax.set_xlabel('Principal Component 1',fontsize=12)
-ax.set_ylabel('Principal Component 2',fontsize=12)
-ax.set_xticks(np.arange(-8,10,2))
-ax.set_yticks(np.arange(-6,16,2))
-ax.tick_params(labelsize=12)
-# plt.title('2 Component PCA', fontsize = 16)
-scatter = ax.scatter(principalDf['PC1'], principalDf['PC2'], c = y, cmap = mapML,
-            s = 7)
-# scatter = ax.scatter(principalDf['PC1'], principalDf['PC2'], c = plotcols, s = 7)
-lgd = ax.legend((scatter.legend_elements()[0]),labels, title="Class",
-                    prop={'size': 10}, bbox_to_anchor=(1.01, 1),
-                    loc='upper left', ncol=1)
-ax.add_artist(lgd)
-plt.setp(lgd.get_title(),fontsize=10)
+
+fig,(ax1,ax2,ax3) = plt.subplots(1, 3, dpi=300, figsize = (8,3.5), sharex=True, sharey=True)
+plt.xticks(np.arange(-8,10,2))
+plt.yticks(np.arange(-6,16,2))
+
+fig.text(0, 0.5, 'Principal Component 2', va='center', rotation='vertical', fontsize=12)
+
+
+   
+axs = [ax1,ax2,ax3] 
+for i in range(len(axs)):
+    ax = axs[i]
+    ax.set_aspect(1)
+    ax.tick_params(labelsize=12)
+    ax.grid(b=True, which='major', linestyle='-', linewidth=0.5, alpha=0.25, zorder=0)
+
+    # plt.title('2 Component PCA', fontsize = 16)
+    # scatter = ax.scatter(principalDf['PC1'], principalDf['PC2'], c = plotcols, s = 7)
+    
+ax1.scatter(principalDf.loc[y==0]['PC1'], principalDf.loc[y==0]['PC2'], c=colors[0], s = 7, label=f'Class {1}: Relatives/Friends')
+ax2.scatter(principalDf.loc[y==1]['PC1'], principalDf.loc[y==1]['PC2'], c=colors[1], s = 7, label=f'Class {2}: Shelter')
+ax3.scatter(principalDf.loc[y==2]['PC1'], principalDf.loc[y==2]['PC2'], c=colors[2], s = 7, label=f'Class {3}: Hotel')
+
+ax2.set_xlabel('Principal Component 1', ha='center', fontsize=12)
+
+# lgd = ax.legend((scatter.legend_elements()[0]),labels, title="Class",
+#                         prop={'size': 10}, bbox_to_anchor=(1.01, 1),
+#                         loc='upper left', ncol=1)
+# ax.add_artist(lgd)
+# plt.setp(lgd.get_title(),fontsize=10)
+    
+lines_labels = [ax.get_legend_handles_labels() for ax in fig.axes]
+handles, labels = [sum(lol, []) for lol in zip(*lines_labels)]
+fig.legend(handles, labels, loc='upper center', fontsize=12, ncol=3, bbox_to_anchor=(0.52, 1.05))
+
 # plt.colorbar()#.set_label(p_names[target])
 # plt.tight_layout(rect=(0, 0, -5, 1)) 
-plt.gcf().canvas.draw()
-invFigure = plt.gcf().transFigure.inverted()
-lgd_pos = lgd.get_window_extent()
-lgd_coord = invFigure.transform(lgd_pos)
-lgd_xmax = lgd_coord[1, 0]
-ax_pos = plt.gca().get_window_extent()
-ax_coord = invFigure.transform(ax_pos)
-ax_xmax = ax_coord[1, 0]
-shift = 1 - (lgd_xmax - ax_xmax)
-plt.gcf().tight_layout(rect=(0, 0, shift, 1))
+# plt.gcf().canvas.draw()
+# invFigure = plt.gcf().transFigure.inverted()
+# lgd_pos = lgd.get_window_extent()
+# lgd_coord = invFigure.transform(lgd_pos)
+# lgd_xmax = lgd_coord[1, 0]
+# ax_pos = plt.gca().get_window_extent()
+# ax_coord = invFigure.transform(ax_pos)
+# ax_xmax = ax_coord[1, 0]
+# shift = 1 - (lgd_xmax - ax_xmax)
+# plt.gcf().tight_layout(rect=(0, 0, shift, 1))
+fig.tight_layout()
 plt.show()
 fig.savefig('PCA.png',dpi=300)
-plt.close()
+# plt.close()
 
-# Get component loadings 
+#%% Get component loadings 
 # (correlation coefficient between original variables and the component) 
 loadings = pca.components_
 loadings_df = pd.DataFrame.from_dict(dict(zip(pccols, loadings)))
