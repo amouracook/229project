@@ -108,15 +108,15 @@ class DisasterPreparednessModel(nn.Module):
         n_emb = sum(e.embedding_dim for e in self.embeddings) #length of all embeddings combined
         self.n_emb, self.n_cont = n_emb, n_cont
         D1 = self.n_emb + self.n_cont
-        D2 = 50 #2*(self.n_emb + self.n_cont)//3 + 3
+        D2 = 2*(self.n_emb + self.n_cont)//3 + 3
         D3 = 3
         self.lin1 = nn.Linear(D1, D2) #just CS things
         self.lin2 = nn.Linear(D2, D3)
         self.bn1 = nn.BatchNorm1d(self.n_cont) # n_cont = number of cont. features
         self.bn2 = nn.BatchNorm1d(D2)
-        self.emb_drop = nn.Dropout(0.2) # dropout probability for features
+        self.emb_drop = nn.Dropout(0.1) # dropout probability for features
         self.drops = nn.Dropout(0.5) # dropout probability for hidden layers
-        self.sigmoid = nn.Softmax(dim=1)
+        self.softmax = nn.Softmax(dim=1)
 
     def forward(self, x_cat, x_cont):
         x = [e(x_cat[:,i]) for i,e in enumerate(self.embeddings)]
@@ -128,7 +128,7 @@ class DisasterPreparednessModel(nn.Module):
         x = self.drops(x)
         x = self.bn2(x)
         x = self.lin2(x)
-        x = self.sigmoid(x)
+        x = self.softmax(x)
         return x
 
 #%% More function definition
@@ -219,11 +219,11 @@ valid_dl = DataLoader(valid_ds, batch_size=batch_size, shuffle=True)
 w= [1 - n / sum(n)]
 
 # Loss Function Train
-alpha = 0.05
-gamma = 3
+alpha = 0.25
+gamma = 2
 focal = kr.losses.FocalLoss(alpha=alpha, gamma=gamma, reduction='mean')
 
-train_loop(model, focal, epochs=100, lr=2e-5, wd=1e-3)
+train_loop(model, focal, epochs=200, lr=1e-4, wd=1e-2)
 
 #%% Balanced accuracy
 def balanced_accuracy(weights, test_dl, y_eval, model, print_flag=False):

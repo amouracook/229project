@@ -299,8 +299,7 @@ from sklearn.linear_model import LogisticRegression
 
 logreg = LogisticRegression(random_state=0, 
                            multi_class='multinomial', 
-                           penalty='l2', max_iter=10000,
-                           C=0.1)
+                           max_iter=10000)
 logreg.fit(X_train, y_train)
 
 print('LOGREG')
@@ -318,9 +317,9 @@ y_pred = logreg.predict(X_test)
 print(accuracy_score(y_test, y_pred))
 print(balanced_accuracy_score(y_test, y_pred))
 print(f1_score(y_test, y_pred, average='weighted'))
-print(confusion_matrix(y_test , ridge.predict(X_test)))
+print(confusion_matrix(y_test , y_pred))
 
-plot_multiclass_roc(logreg, X_test, y_test, title='Softmax Regression', n_classes=3,  flag=False, save='logreg_roc.png')
-# plot_multiclass_roc(logreg, X_test, y_test, title='Softmax Regression', n_classes=3,  flag=False)
+# plot_multiclass_roc(logreg, X_test, y_test, title='Softmax Regression', n_classes=3,  flag=False, save='logreg_roc.png')
+plot_multiclass_roc(logreg, X_test, y_test, title='Softmax Regression', n_classes=3,  flag=False)
 
 
