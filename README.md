@@ -16,7 +16,7 @@ NN_WCE.py             == implementation of a neural network using weighted cross
 NN_BalCE.py           == implementation of a neural network using class-balanced cross-entropy loss
 NN_Focal.py           == implementation of a neural network using Focal Loss
 
-Other Folders:
+Other folders:
 _ss        == superseded data, scripts, and files
 Figures    == ROC figures generated for the final report
 References == information about the American Housey Survey data
