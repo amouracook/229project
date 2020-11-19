@@ -22,18 +22,16 @@ from sklearn.metrics import roc_curve, auc
 import seaborn as sns
 
 torch.manual_seed(1)
-np.random.seed(0)
 
 # dataset: 0 = SF data only, 1 = SF + LA data, 2 = SF + SJ data, 3 = All of CA
-
 X, y, X_encode, X_train, y_train, X_val, y_val, X_test, y_test, n = \
-    feature_extraction(dataset = 0, onehot_option = False, smote_option = False)
+    feature_extraction(dataset = 0, onehot_option = True, smote_option = False, y_stratify=True, seed=0)
     
     
 #%% Categorical embedding for categorical columns having more than two values
 
 # Choosing columns for embedding
-embedded_cols = {n: len(col.cat.categories) for n,col in X.loc[:,X_encode==1].items() if len(col.cat.categories) > 2}
+embedded_cols = {n: len(col.cat.categories) for n,col in X.loc[:,X_encode==1].items() if len(np.unique(col)) > 20}
 embedded_col_names = embedded_cols.keys()
 
 # Determinining size of embedding
@@ -63,39 +61,8 @@ class DisasterPreparednessDataset(Dataset):
 train_ds = DisasterPreparednessDataset(X_train, y_train, embedded_col_names)
 valid_ds = DisasterPreparednessDataset(X_val, y_val, embedded_col_names)
 
-#%% Making device GPU/CPU compatible
-# (borrowed from https://jovian.ml/aakashns/04-feedforward-nn)
-
-def get_default_device():
-    """Pick GPU if available, else CPU"""
-    if torch.cuda.is_available():
-        return torch.device('cuda')
-    else:
-        return torch.device('cpu')
-def to_device(data, device):
-    """Move tensor(s) to chosen device"""
-    if isinstance(data, (list,tuple)):
-        return [to_device(x, device) for x in data]
-    return data.to(device, non_blocking=True)
-
-class DeviceDataLoader():
-    """Wrap a dataloader to move data to a device"""
-    def __init__(self, dl, device):
-        self.dl = dl
-        self.device = device
-        
-    def __iter__(self):
-        """Yield a batch of data after moving it to device"""
-        for b in self.dl: 
-            yield to_device(b, self.device)
-
-    def __len__(self):
-        """Number of batches"""
-        return len(self.dl)
-    
-device = get_default_device()
-
 #%% Model
+# Code borrowed from: https://jovian.ai/aakanksha-ns/shelter-outcome
 # From: https://www.usfca.edu/data-institute/certificates/fundamentals-deep-learning lesson 2
 
 class DisasterPreparednessModel(nn.Module):
@@ -108,13 +75,13 @@ class DisasterPreparednessModel(nn.Module):
         D1 = self.n_emb + self.n_cont
         D2 = 2*(self.n_emb + self.n_cont)//3 + 3
         D3 = 3
-        self.lin1 = nn.Linear(D1, D2) #just CS things
+        self.lin1 = nn.Linear(D1, D2)
         self.lin2 = nn.Linear(D2, D3)
         self.bn1 = nn.BatchNorm1d(self.n_cont) # n_cont = number of cont. features
         self.bn2 = nn.BatchNorm1d(D2)
         self.emb_drop = nn.Dropout(0.1) # dropout probability for features
         self.drops = nn.Dropout(0.5) # dropout probability for hidden layers
-
+        self.softmax = nn.Softmax(dim=1)
 
     def forward(self, x_cat, x_cont):
         x = [e(x_cat[:,i]) for i,e in enumerate(self.embeddings)]
@@ -126,10 +93,16 @@ class DisasterPreparednessModel(nn.Module):
         x = self.drops(x)
         x = self.bn2(x)
         x = self.lin2(x)
-        
+        x = self.softmax(x)
         return x
 
 #%% More function definition
+def bal_acc_opt(weights, y_true, prob):  
+    y1 = y_true.detach().numpy()
+    y2 = prob.detach().numpy()
+    y2 *= np.asarray(weights)
+    y2 = [np.argmax(y2[i,:]) for i in range(y2.shape[0])]  
+    return -balanced_accuracy_score(y1, y2)
 
 # Optimizer
 def get_optimizer(model, lr = 0.001, wd = 0.0):
@@ -196,16 +169,15 @@ def predict(outs,w):
 batch_size = 100
 
 model = DisasterPreparednessModel(embedding_sizes, X.shape[1]-len(embedded_cols))
-to_device(model, device)
 train_dl = DataLoader(train_ds, batch_size=batch_size, shuffle=True)
 valid_dl = DataLoader(valid_ds, batch_size=batch_size, shuffle=True)
 
-#%% Train
+#%% Train the model
 
-# Weights
+# Class-specific weights
 w= [1 - n / sum(n)]
 
-train_loop(model, w, epochs=250, lr=1e-4, wd=1e-2)
+train_loop(model, w, epochs=200, lr=1e-4, wd=1e-2)
 
 
 #%%
@@ -221,7 +193,21 @@ def balanced_accuracy(weights, test_dl, y_eval, model, print_flag=False):
     if print_flag: 
         print(accuracy_score(y_eval, y_pred),balanced_accuracy_score(y_eval, y_pred))
         print(confusion_matrix(y_eval, y_pred))
-        print(f1_score(y_eval, y_pred, average='weighted'))
+        print(f1_score(y_eval, y_pred, average='macro'))
+    return -balanced_accuracy_score(y_eval, y_pred)
+
+#%% Balanced accuracy function
+def balanced_accuracy(weights, test_dl, y_eval, model, print_flag=False):
+    preds = []
+    with torch.no_grad():
+        for x1,x2,y in test_dl:
+            out = model(x1, x2)*torch.tensor(weights)
+            preds.append(out)
+
+    y_pred = [torch.argmax(item).item() for sublist in preds for item in sublist]  
+    if print_flag: 
+        print(accuracy_score(y_eval, y_pred),balanced_accuracy_score(y_eval, y_pred))
+        print(confusion_matrix(y_eval, y_pred))
     return -balanced_accuracy_score(y_eval, y_pred)
 
 #%% Train accuracy
@@ -232,46 +218,18 @@ balanced_accuracy([1,1,1], train_dl, y_train, model, True)
 #%% Validation accuracy
 val_ds = DisasterPreparednessDataset(X_val, y_val, embedded_col_names)
 val_dl = DataLoader(val_ds, batch_size=batch_size)
-
 balanced_accuracy([1,1,1],  val_dl, y_val, model, True)
-
-w_opt=minimize(balanced_accuracy, x0=[1,1,1], args=(val_dl, y_val, model), method='Powell')
-balanced_accuracy(w_opt.x, val_dl, y_val, model, True)
 
 #%% Test output
 test_ds = DisasterPreparednessDataset(X_test, y_test, embedded_col_names)
 test_dl = DataLoader(test_ds, batch_size=batch_size)
-
 balanced_accuracy([1,1,1], test_dl, y_test, model, True)
-balanced_accuracy(w_opt.x, test_dl, y_test, model, True)
 
-
-test_ds = DisasterPreparednessDataset(X_test, y_test, embedded_col_names)
-test_dl = DataLoader(test_ds, batch_size=batch_size)
-
-
-#%%
-test_ds = DisasterPreparednessDataset(X_test, y_test, embedded_col_names)
-test_dl = DataLoader(test_ds, batch_size=batch_size)
-
-preds = []
-with torch.no_grad():
-    for x1,x2,y in test_dl:
-        out = model(x1, x2)*w_opt.x
-        # print(prob)
-        preds.append(out)
-
-
-y_pred = [torch.argmax(item).item() for sublist in preds for item in sublist]  
-
-#%%
-import matplotlib.pyplot as plt
+#%% Plot confusion matrix and ROC curves
 def plot_multiclass_roc(preds, y_pred, X_test, y_test, n_classes, title, figsize=(5,9.5), flag=False, save=None):
-    y_score = torch.cat(preds,dim=0)
-        
-    colors = ['#433E3F','#7880B5', '#E45C3A']
-    
-    plt.rcParams['font.size'] = '16'
+    y_score = torch.cat(preds,dim=0)       
+    colors = ['#E45C3A', '#F4A261', '#7880B5']
+    plt.rcParams['font.size'] = '14'
 
     # structures
     fpr = dict()
@@ -297,33 +255,36 @@ def plot_multiclass_roc(preds, y_pred, X_test, y_test, n_classes, title, figsize
     ax.grid(b=True, which='major', linestyle='-', linewidth=0.5, alpha=0.5, zorder=0)
     ax.grid(b=True, which='minor',  color='gray', linestyle='-', linewidth=0.25, alpha=0.25, zorder=0)
 
-    ax.set_title(title, fontsize=18, fontweight='bold')
+    ax.set_title(title, fontsize=16, fontweight='bold')
     titles = ['Relatives / Friends', 'Public Shelter', 'Hotel']
     for i in range(n_classes):
-        print('ROC curve (area = %0.4f) for label %i' % (roc_auc[i], i))
-        # ax.plot(fpr[i], tpr[i], color=colors[i], label='ROC curve (area = %0.2f) for label %i' % (roc_auc[i], i))
-        ax.plot(fpr[i], tpr[i], color=colors[i], label=f'Class {i+1}', linewidth=3)
+        ax.plot(fpr[i], tpr[i], color=colors[i], label=f'Label {i}')
     ax.legend(loc="lower right")
     
     np.set_printoptions(precision=2)
-    
     ax2 = sns.heatmap(confusion_matrix(y_test, y_pred, normalize='true'), annot=True, 
-                      cmap=plt.cm.Blues, vmin=0.0, vmax=1.0, annot_kws={'size':16},
-                      yticklabels=[i+1 for i in range(n_classes)],
-                      xticklabels=[i+1 for i in range(n_classes)])
+                      cmap=plt.cm.Blues, vmin=0.0, vmax=1.0, annot_kws={'size':16})
 
     for _, spine in ax2.spines.items():
         spine.set_visible(True)
         
-    ax2.set_xlabel('Predicted class')
-    ax2.set_ylabel('True class')
+    ax2.set_xlabel('Predicted label')
+    ax2.set_ylabel('True label')
     ax2.set_aspect(1)
 
     fig.tight_layout()
-    
+
     if save: plt.savefig(save, dpi=300)
-    
     plt.show()
-   
-#%%
-plot_multiclass_roc(preds, y_pred, X_test, y_test, title='Neural Network (W. CE)', n_classes=3, flag=False, save='NN_WCE_roc.png')
+ 
+    
+#%% Run the plot function
+preds = []
+with torch.no_grad():
+    for x1,x2,y in test_dl:
+        out = model(x1, x2)
+        preds.append(out)
+
+y_pred = [torch.argmax(item).item() for sublist in preds for item in sublist]  
+plot_multiclass_roc(preds, y_pred, X_test, y_test, title='Neural Network (WCE)', n_classes=3, flag=False, save=False)
+
