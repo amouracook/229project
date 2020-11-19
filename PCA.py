@@ -3,7 +3,7 @@
 """
 Created on Wed Nov 11 22:08:16 2020
 
-@author: Aaron
+@author: Ana, Aaron, Davyd
 """
 
 from feature_extraction import feature_extraction
