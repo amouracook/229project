@@ -176,11 +176,11 @@ valid_dl = DataLoader(valid_ds, batch_size=batch_size, shuffle=True)
 #%% Train the model
 
 # Define loss function parameters
-alpha = 1
+alpha = 0.05
 gamma = 3
 focal = kr.losses.FocalLoss(alpha=alpha, gamma=gamma, reduction='mean')
 
-train_loop(model, focal, epochs=200, lr=1e-5, wd=1e-4)
+train_loop(model, focal, epochs=1200, lr=1e-5, wd=1e-4)
 
 #%% Balanced accuracy function
 def balanced_accuracy(weights, test_dl, y_eval, model, print_flag=False):
