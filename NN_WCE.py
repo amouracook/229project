@@ -62,7 +62,7 @@ train_ds = DisasterPreparednessDataset(X_train, y_train, embedded_col_names)
 valid_ds = DisasterPreparednessDataset(X_val, y_val, embedded_col_names)
 
 #%% Model
-# Code borrowed from: https://jovian.ai/aakanksha-ns/shelter-outcome
+# Baseline framework provided by: https://jovian.ai/aakanksha-ns/shelter-outcome
 # From: https://www.usfca.edu/data-institute/certificates/fundamentals-deep-learning lesson 2
 
 class DisasterPreparednessModel(nn.Module):
