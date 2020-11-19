@@ -24,17 +24,13 @@ def plot_multiclass_roc(clf, X_test, y_test, n_classes, title, figsize=(6.5,12),
     if flag: y_score = clf.predict_proba(X_test)
     else: y_score = clf.decision_function(X_test)
         
-    colors = ['#7880B5','#433E3F', '#E45C3A']
-    # colors = ['#2D5362', '#7880B5', '#79A1CC', '#2A9D8F', '#E9C46A', '#F4A261', '#E45C3A']
-    
+    colors = ['#7880B5','#433E3F', '#E45C3A']    
     plt.rcParams['font.size'] = '23'
 
-    # structures
     fpr = dict()
     tpr = dict()
     roc_auc = dict()
 
-    # Calculate dummies once
     y_temp = pd.get_dummies(y_test, drop_first=False).values
     for i in range(n_classes):
         fpr[i], tpr[i], _ = roc_curve(y_temp[:, i], y_score[:, i])

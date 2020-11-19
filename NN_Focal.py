@@ -217,12 +217,10 @@ def plot_multiclass_roc(preds, y_pred, X_test, y_test, n_classes, title, figsize
     colors = ['#E45C3A', '#F4A261', '#7880B5']
     plt.rcParams['font.size'] = '14'
 
-    # structures
     fpr = dict()
     tpr = dict()
     roc_auc = dict()
 
-    # calculate dummies once
     y_test_dummies = pd.get_dummies(y_test, drop_first=False).values
     for i in range(n_classes):
         fpr[i], tpr[i], _ = roc_curve(y_test_dummies[:, i], y_score[:, i])
