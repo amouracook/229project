@@ -13,13 +13,27 @@ from collections import Counter
 from sklearn import preprocessing, model_selection
 
 
-def feature_extraction(dataset, onehot_option = False, smote_option = True, y_stratify=False, seed=0, as_category=True):
+def feature_extraction(dataset, onehot_option = False, smote_option = True,
+                       y_stratify=False, seed=0, as_category=True):
     '''
-        onehot_option: False = label encode features, True = one-hot encode features
-        smote_option: False = don't use SMOTE, True = use SMOTE
-        dataset: 0 = SF data only, 1 = SF + LA data, 2 = SF + SJ data, 3 = All of CA
+        Loads the American Housing Survey 2017 dataset of interest and exports
+        Pandas training, validation, and test data
+        
+        Inputs: 
+            onehot_option:  False = label encode features, True = one-hot encode features
+            smote_option:   False = don't use SMOTE, True = use SMOTE
+            dataset:        0 = SF data only, 1 = SF + LA data, 2 = SF + SJ data, 3 = All of CA
+        
+        Outputs:
+            X: Dataframe of input features
+            y: Dataframe of target variable
+            X_encode: Input variable encoding
+            X_train, X_val, X_test: Train, validation and test input dataframes
+            y_train, y_val, y_test: Train validation and test target variable dataframe
+
     '''
     
+    # Read dataset based on input
     if dataset==0:
         df = pd.read_csv('SF_41860_Flat.csv', index_col=0)
     elif dataset == 1:
