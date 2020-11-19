@@ -1,11 +1,6 @@
 # 229project
 
-Abstract: The field of post-disaster recovery modeling is currently limited by semi-heuristic assumptions. 
-The ability to establish robust relationships is hindered by categorical, survey-based data. This project 
-explores the use of regression methods, decision tree models, and neural networks to predict a household's 
-post-disaster location of temporary shelter, a decision with significant implications on population out-
-migration. The resulting models perform substantially better than a random-guess trivial classifier but 
-illustrate the challenges of class-imbalanced data.
+Abstract: The field of post-disaster recovery modeling is currently limited by semi-heuristic assumptions. The ability to establish robust relationships is hindered by categorical, survey-based data. This project explores the use of regression methods, decision tree models, and neural networks to predict a household's post-disaster location of temporary shelter, a decision with significant implications on population out-migration. The resulting models perform substantially better than a random-guess trivial classifier but illustrate the challenges of class-imbalanced data.
 
 Data: Public Use Microdata Sample from the 2017 American Housing Survey, performed by the U.S. Census Bureau
 SF_41860.csv == data from San Francisco, Oakland, and Hayward, CA
