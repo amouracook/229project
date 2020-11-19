@@ -23,5 +23,4 @@ NN_Focal.py           == implementation of a neural network using Focal Loss<br 
 
 Other Folders:<br />
 _ss        == superseded data, scripts, and files<br />
-Figures    == ROC figures generated for the final report<br />
 References == information about the American Housey Survey data

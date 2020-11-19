@@ -109,10 +109,6 @@ fig.savefig('PCA.png',dpi=300)
 
 #%% Plot principal components (1-pane)
 
-
-a = plt.figure(dpi=300)
-plt.xlabel('Principal Component 1')
-plt.ylabel('Principal Component 2')
 from matplotlib.colors import LinearSegmentedColormap
 
 # Define custom colors
@@ -127,8 +123,6 @@ ax.set_ylabel('Principal Component 2',fontsize=12)
 ax.set_xticks(np.arange(-8,10,2))
 ax.set_yticks(np.arange(-6,16,2))
 ax.tick_params(labelsize=12)
-plt.scatter(principalDf['PC1'], principalDf['PC2'], c = y,cmap='viridis', s = 4)
-plt.legend()
 
 # Plot colored scatter plot with all three classes
 scatter = ax.scatter(principalDf['PC1'], principalDf['PC2'], c = y, cmap = mapML,
@@ -151,6 +145,5 @@ ax_xmax = ax_coord[1, 0]
 shift = 1 - (lgd_xmax - ax_xmax)
 plt.gcf().tight_layout(rect=(0, 0, shift, 1))
 plt.show()
-a.savefig('PCA.png',dpi=300)
-fig.savefig('PCA.png',dpi=300)
+fig.savefig('PCA2.png',dpi=300)
 plt.close()
